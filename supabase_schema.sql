@@ -35,6 +35,19 @@ create table if not exists payment_methods (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- PRODUCTS TABLE
+-- Stores product information linked to profile
+create table if not exists products (
+  id uuid primary key default uuid_generate_v4(),
+  profile_id uuid references profiles(id) on delete cascade not null,
+  name text not null,
+  price decimal(12,2) default 0.00 not null,
+  quantity integer default 0 not null,
+  image_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- ROW LEVEL SECURITY (RLS)
 -- Use this if you are using Supabase Auth tailored for Clerk, 
 -- OTHERWISE (Simpler for now): We will control access via Server Actions (Service Role) 
@@ -42,10 +55,12 @@ create table if not exists payment_methods (
 
 alter table profiles enable row level security;
 alter table payment_methods enable row level security;
+alter table products enable row level security;
 
 -- Policy: Deny public access (default is deny, but being explicit is good)
 create policy "No public access to profiles" on profiles for all using (false);
 create policy "No public access to payment_methods" on payment_methods for all using (false);
+create policy "No public access to products" on products for all using (false);
 
 -- Note: We will access these tables using the Supabase Service Role Key in our Server Actions,
 -- which bypasses RLS. This keeps the data secure from public API requests.
