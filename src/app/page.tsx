@@ -46,7 +46,7 @@ export default function LandingPage() {
             className="mb-6 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[13px] font-bold tracking-wide flex items-center gap-2"
           >
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-            NEW: รองรับการสรุปรายได้ผ่าน AI
+            NEW: V.1.0.0
           </motion.div>
 
           <motion.h1
