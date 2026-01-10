@@ -7,7 +7,9 @@ import {
   PackageSearch,
   History,
   Settings,
+  Sparkles,
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 import {
   Sidebar,
@@ -43,28 +45,33 @@ const items = [
 
 export function AppSidebar() {
   // ดึงค่า theme ปัจจุบัน (light หรือ dark)
-  const { theme } = useTheme()
+  const { resolvedTheme } = useTheme()
 
   return (
-    <Sidebar>
+    <Sidebar className="border-r border-sidebar-border/50 glass">
       {/* ================= CONTENT ================= */}
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-bold">
-            Bit<span className="text-blue-600">Sync</span>
-          </SidebarGroupLabel>
+        <SidebarGroup className="px-3">
+          <Link href="/auth/home" className="flex items-center gap-2.5 py-8 px-2 group">
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 group-hover:scale-105">
+              <Sparkles className="text-primary-foreground h-5 w-5 fill-current" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">
+              Bit<span className="text-primary">Sync</span>
+            </span>
+          </Link>
 
-          <SidebarGroupContent>
-            <SidebarMenu>
+          <SidebarGroupContent className="mt-4">
+            <SidebarMenu className="gap-2">
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-10 px-3 rounded-lg transition-all duration-200 hover:bg-accent hover:text-accent-foreground data-[active=true]:bg-accent data-[active=true]:text-accent-foreground">
                     <Link
                       href={item.url}
                       className="flex items-center gap-3"
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-4.5 w-4.5" />
+                      <span className="font-medium text-sm">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -75,22 +82,23 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* ================= FOOTER ================= */}
-      <SidebarFooter className="gap-3 p-3">
+      <SidebarFooter className="gap-4 p-6 glass border-t border-sidebar-border/50">
         <ModeToggle />
 
-        <div className="h-px w-full bg-sidebar-border" />
+        <div className="h-px w-full bg-sidebar-border/30" />
 
         <SignedIn>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 py-2">
             <UserButton
-              afterSignOutUrl="/"
               appearance={{
-                // ถ้า theme เป็น dark ให้ใช้ธีม dark ของ Clerk เพื่อให้ข้อความเปลี่ยนสี
-                baseTheme: theme === "dark" ? dark : undefined,
+                baseTheme: resolvedTheme === "dark" ? dark : undefined,
+                variables: {
+                  colorPrimary: 'oklch(0.205 0 0)', // matching our new primary
+                },
                 elements: {
-                  avatarBox: "h-8 w-8",
-                  // จัดการสีข้อความชื่อผู้ใช้ให้สอดคล้องกับ Sidebar
-                  userButtonOuterIdentifier: "text-sidebar-foreground font-medium",
+                  avatarBox: "h-8 w-8 rounded-lg shadow-sm border border-border transition-all",
+                  userButtonOuterIdentifier: "text-foreground font-semibold tracking-tight text-xs ml-1",
+                  userButtonTrigger: "hover:bg-accent rounded-lg p-0.5 transition-all",
                 },
               }}
               showName
@@ -100,9 +108,9 @@ export function AppSidebar() {
 
         <SignedOut>
           <SignInButton mode="modal">
-            <SidebarMenuButton className="w-full justify-center">
+            <Button size="sm" className="w-full h-10 bg-primary text-primary-foreground rounded-lg font-bold shadow-sm hover:opacity-90 transition-all border-none">
               Sign In
-            </SidebarMenuButton>
+            </Button>
           </SignInButton>
         </SignedOut>
       </SidebarFooter>

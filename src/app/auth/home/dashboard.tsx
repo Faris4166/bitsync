@@ -41,7 +41,7 @@ type Receipt = {
 const chartConfig = {
     income: {
         label: "รายได้",
-        color: "hsl(var(--primary))",
+        color: "var(--primary)",
     },
 } satisfies ChartConfig
 
@@ -132,80 +132,81 @@ export default function Dashboard() {
                     <p className="text-muted-foreground">สรุปผลการดำเนินงานและสถิติรายได้ของคุณ</p>
                 </div>
                 <Button
-                    className="rounded-full shadow-lg h-11"
+                    className="rounded-lg shadow-sm h-10 px-4 bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-all border-none"
                     onClick={handleExportPDF}
                     disabled={isExporting}
                 >
                     {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    ส่งออกสรุปสถิติ (PDF)
+                    Export PDF
                 </Button>
             </div>
 
             {/* --- STAT CARDS --- */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="rounded-[2rem] border-none shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group">
+                <Card className="rounded-xl border border-border shadow-sm bg-card group">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-bold">รายได้รวมทั้งหมด</CardTitle>
-                        <div className="p-2 bg-primary/10 rounded-xl group-hover:scale-110 transition-transform">
-                            <TrendingUp className="h-4 w-4 text-primary" />
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">รายได้รวมทั้งหมด</CardTitle>
+                        <div className="p-2.5 bg-primary/10 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
+                            <TrendingUp className="h-5 w-5 text-primary" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black">฿{totalIncome.toLocaleString()}</div>
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                            ยอดขายสะสมจาก {totalOrders} รายการ
+                        <div className="text-2xl font-bold tracking-tight">฿{totalIncome.toLocaleString()}</div>
+                        <p className="text-xs text-muted-foreground mt-2 font-medium flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            สะสมจาก {totalOrders} รายการ
                         </p>
                     </CardContent>
                 </Card>
 
-                <Card className="rounded-[2rem] border-none shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group">
+                <Card className="rounded-xl border border-border shadow-sm bg-card group">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-bold">รายได้จากสินค้า</CardTitle>
-                        <div className="p-2 bg-blue-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                            <Package className="h-4 w-4 text-blue-500" />
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">รายได้จากสินค้า</CardTitle>
+                        <div className="p-2.5 bg-blue-500/10 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
+                            <Package className="h-5 w-5 text-blue-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black">฿{totalProducts.toLocaleString()}</div>
-                        <p className="text-xs text-muted-foreground mt-1">เฉพาะยอดขายสินค้า</p>
+                        <div className="text-2xl font-bold tracking-tight">฿{totalProducts.toLocaleString()}</div>
+                        <p className="text-xs text-muted-foreground mt-2 font-medium">เฉพาะยอดขายสินค้า</p>
                     </CardContent>
                 </Card>
 
-                <Card className="rounded-[2rem] border-none shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group">
+                <Card className="rounded-xl border border-border shadow-sm bg-card group">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-bold">รายได้จากค่าแรง</CardTitle>
-                        <div className="p-2 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                            <Wrench className="h-4 w-4 text-amber-500" />
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">รายได้จากค่าแรง</CardTitle>
+                        <div className="p-2.5 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
+                            <Wrench className="h-5 w-5 text-amber-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black">฿{totalLabor.toLocaleString()}</div>
-                        <p className="text-xs text-muted-foreground mt-1">รายได้จากการซ่อมและบริการ</p>
+                        <div className="text-2xl font-bold tracking-tight">฿{totalLabor.toLocaleString()}</div>
+                        <p className="text-xs text-muted-foreground mt-2 font-medium">รายได้จากการซ่อมและบริการ</p>
                     </CardContent>
                 </Card>
 
-                <Card className="rounded-[2rem] border-none shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden group">
+                <Card className="rounded-xl border border-border shadow-sm bg-card group">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-bold">จำนวนใบเสร็จ</CardTitle>
-                        <div className="p-2 bg-green-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                            <CreditCard className="h-4 w-4 text-green-500" />
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">จำนวนใบเสร็จ</CardTitle>
+                        <div className="p-2.5 bg-green-500/10 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
+                            <CreditCard className="h-5 w-5 text-green-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black">{totalOrders}</div>
-                        <p className="text-xs text-muted-foreground mt-1">รายการที่ออกทั้งหมด</p>
+                        <div className="text-2xl font-bold tracking-tight">{totalOrders}</div>
+                        <p className="text-xs text-muted-foreground mt-2 font-medium">รายการที่ออกทั้งหมด</p>
                     </CardContent>
                 </Card>
             </div>
 
             {/* --- CHART SECTION --- */}
             <div className="grid gap-6 lg:grid-cols-7">
-                <Card className="lg:col-span-4 rounded-[2.5rem] border-none shadow-xl bg-card/30 backdrop-blur-md overflow-hidden">
+                <Card className="lg:col-span-4 rounded-xl border border-border shadow-sm bg-card">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <TrendingUp className="h-5 w-5 text-primary" /> แนวโน้มรายได้ (7 วันล่าสุด)
+                        <CardTitle className="flex items-center gap-2 text-base font-bold">
+                            <TrendingUp className="h-4.5 w-4.5 text-primary" /> Revenues (Last 7 Days)
                         </CardTitle>
-                        <CardDescription>แสดงยอดขายรวมรายวัน</CardDescription>
+                        <CardDescription>Daily total income overview</CardDescription>
                     </CardHeader>
                     <CardContent className="pl-2 pr-4 h-[350px]">
                         <ChartContainer config={chartConfig} className="h-full w-full">
@@ -251,13 +252,13 @@ export default function Dashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-3 rounded-[2.5rem] border-none shadow-xl bg-primary text-primary-foreground overflow-hidden relative">
-                    <div className="absolute top-0 right-0 p-8 opacity-10">
-                        <LayoutDashboard className="h-48 w-48 rotate-12" />
+                <Card className="lg:col-span-3 rounded-xl border border-border shadow-sm bg-primary text-primary-foreground overflow-hidden relative">
+                    <div className="absolute top-0 right-0 p-6 opacity-10">
+                        <LayoutDashboard className="h-40 w-40 rotate-12" />
                     </div>
                     <CardHeader>
-                        <CardTitle className="text-2xl font-black">สรุปยอดรวม</CardTitle>
-                        <CardDescription className="text-primary-foreground/60 italic">Bitsync Analytics Engine</CardDescription>
+                        <CardTitle className="text-xl font-bold">Analytics Summary</CardTitle>
+                        <CardDescription className="text-primary-foreground/60">Bitsync Analytics Engine</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6 pt-4">
                         <div className="space-y-2">
@@ -286,9 +287,9 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        <div className="mt-10 p-6 bg-white/10 rounded-[2rem] border border-white/10">
-                            <p className="text-sm opacity-60 uppercase tracking-widest font-bold">Total Net Balance</p>
-                            <h2 className="text-4xl font-black mt-2">฿{totalIncome.toLocaleString()}</h2>
+                        <div className="mt-8 p-6 bg-white/5 rounded-xl border border-white/10">
+                            <p className="text-xs opacity-60 uppercase tracking-widest font-bold">Total Net Balance</p>
+                            <h2 className="text-3xl font-bold mt-1.5">฿{totalIncome.toLocaleString()}</h2>
                         </div>
                     </CardContent>
                 </Card>

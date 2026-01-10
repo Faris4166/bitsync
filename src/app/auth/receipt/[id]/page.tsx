@@ -127,70 +127,79 @@ export default function ReceiptDetail() {
     )
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6 pb-20 px-4">
-            {/* --- ACTION BAR --- */}
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-background/80 backdrop-blur-md p-4 rounded-2xl sticky top-4 z-10 border shadow-sm">
-                <div className="flex gap-2">
-                    <Button variant="ghost" className="rounded-full" asChild>
-                        <Link href="/auth/receipt">
-                            <ArrowLeft className="h-4 w-4 mr-2" /> กลับ
-                        </Link>
-                    </Button>
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* --- PAGE HEADER --- */}
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md" asChild>
+                            <Link href="/auth/history">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-2 py-0.5 rounded border border-border">Receipt Details</span>
+                    </div>
+                    <h1 className="text-3xl font-bold tracking-tight">{receipt.receipt_number}</h1>
+                    <p className="text-sm font-medium text-muted-foreground">Issued on {new Date(receipt.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="rounded-full" onClick={() => window.print()}>
-                        <Printer className="h-4 w-4 mr-2" /> พิมพ์
+
+                <div className="flex items-center gap-2 no-print">
+                    <Button variant="outline" size="sm" className="rounded-md font-semibold" onClick={() => window.print()}>
+                        <Printer className="h-4 w-4 mr-2" /> Print
                     </Button>
-                    <Button className="rounded-full shadow-lg" onClick={exportPDF} disabled={isSaving}>
+                    <Button size="sm" className="rounded-md font-semibold shadow-sm" onClick={exportPDF} disabled={isSaving}>
                         {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                        ดาวน์โหลด PDF
+                        Download PDF
                     </Button>
                 </div>
             </div>
 
             {/* --- RECEIPT A4 AREA --- */}
-            <Card className="rounded-none border-none shadow-2xl bg-white mx-auto overflow-hidden">
+            <Card className="rounded-xl border border-border shadow-xl bg-card mx-auto overflow-hidden w-fit no-print-shadow">
                 <div
                     ref={receiptRef}
                     className="w-[210mm] min-h-[297mm] p-[15mm] text-slate-800 bg-white shadow-inner mx-auto relative printable-content"
                     style={{ fontStyle: 'normal' }}
                 >
                     {/* Header */}
-                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-8 mb-8">
+                    <div className="flex justify-between items-start border-b border-slate-200 pb-10 mb-10">
                         <div>
                             {profile?.shop_logo_url && (
-                                <img src={profile.shop_logo_url} alt="Logo" className="h-16 mb-4 object-contain" />
+                                <img src={profile.shop_logo_url} alt="Logo" className="h-12 mb-6 object-contain" />
                             )}
-                            <h1 className="text-4xl font-black uppercase tracking-tighter text-slate-900">{profile?.shop_name || 'BITSYNC SHOP'}</h1>
-                            <p className="text-sm text-slate-500 max-w-xs mt-2 leading-relaxed whitespace-pre-wrap">
-                                {profile?.address || 'ไม่ระบุที่อยู่'}
+                            <h1 className="text-3xl font-bold tracking-tight text-slate-900">{profile?.shop_name || 'BITSYNC SHOP'}</h1>
+                            <p className="text-[12px] text-slate-500 max-w-xs mt-3 leading-relaxed whitespace-pre-wrap">
+                                {profile?.address || 'Address not specified'}
                                 <br />
-                                โทร: {profile?.phone || '-'}
+                                Tel: {profile?.phone || '-'}
                             </p>
                         </div>
                         <div className="text-right">
-                            <div className="bg-slate-900 text-white px-6 py-2 rounded-lg mb-4 inline-block">
-                                <h2 className="text-xl font-bold uppercase tracking-widest">ใบเสร็จรับเงิน</h2>
+                            <div className="mb-6">
+                                <h2 className="text-2xl font-bold tracking-tight text-slate-900">RECEIPT</h2>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Official Document</p>
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">เลขที่ใบเสร็จ</p>
-                                <p className="text-xl font-mono font-bold text-slate-900">{receipt.receipt_number}</p>
-                            </div>
-                            <div className="mt-4">
-                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">วันที่</p>
-                                <p className="text-lg font-bold text-slate-900">{new Date(receipt.created_at).toLocaleDateString('th-TH', {
-                                    year: 'numeric', month: 'long', day: 'numeric'
-                                })}</p>
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Receipt Number</p>
+                                    <p className="text-lg font-mono font-bold text-slate-900">{receipt.receipt_number}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date of Issue</p>
+                                    <p className="text-md font-bold text-slate-900">{new Date(receipt.created_at).toLocaleDateString('en-US', {
+                                        year: 'numeric', month: 'long', day: 'numeric'
+                                    })}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-12 mb-12">
                         <div>
-                            <h3 className="text-sm font-black text-slate-900 border-b border-slate-200 pb-2 mb-4 uppercase tracking-widest">ข้อมูลลูกค้า</h3>
+                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">Customer Details</h3>
                             <div className="space-y-1">
-                                <p className="text-xl font-bold text-slate-900">{receipt.customer_name}</p>
-                                <p className="text-md text-slate-500">{receipt.customer_phone}</p>
+                                <p className="text-lg font-bold text-slate-900">{receipt.customer_name}</p>
+                                <p className="text-sm text-slate-500 font-medium">{receipt.customer_phone}</p>
                             </div>
                         </div>
                     </div>
@@ -198,21 +207,21 @@ export default function ReceiptDetail() {
                     {/* Table */}
                     <table className="w-full mb-12">
                         <thead>
-                            <tr className="bg-slate-900 text-white">
-                                <th className="p-4 text-left rounded-tl-lg font-bold uppercase tracking-widest text-xs">รายการสินค้า</th>
-                                <th className="p-4 text-center font-bold uppercase tracking-widest text-xs">จำนวน</th>
-                                <th className="p-4 text-right font-bold uppercase tracking-widest text-xs">ราคา/หน่วย</th>
-                                <th className="p-4 text-right rounded-tr-lg font-bold uppercase tracking-widest text-xs">รวม</th>
+                            <tr className="bg-slate-50 border-y border-slate-200">
+                                <th className="p-4 text-left font-bold uppercase tracking-widest text-[9px] text-slate-500">Description</th>
+                                <th className="p-4 text-center font-bold uppercase tracking-widest text-[9px] text-slate-500">Qty</th>
+                                <th className="p-4 text-right font-bold uppercase tracking-widest text-[9px] text-slate-500">Unit Price</th>
+                                <th className="p-4 text-right font-bold uppercase tracking-widest text-[9px] text-slate-500">Total</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 border-x border-b border-slate-100">
+                        <tbody className="divide-y divide-slate-100">
                             {receipt.items.map((item, i) => (
                                 <tr key={i}>
                                     <td className="p-4">
-                                        <p className="font-bold text-slate-900">{item.name}</p>
+                                        <p className="font-semibold text-slate-900">{item.name}</p>
                                     </td>
-                                    <td className="p-4 text-center text-slate-600">{item.quantity}</td>
-                                    <td className="p-4 text-right text-slate-600">฿{item.price.toLocaleString()}</td>
+                                    <td className="p-4 text-center text-slate-600 font-medium">{item.quantity}</td>
+                                    <td className="p-4 text-right text-slate-600 font-medium">฿{item.price.toLocaleString()}</td>
                                     <td className="p-4 text-right font-bold text-slate-900">฿{(item.price * item.quantity).toLocaleString()}</td>
                                 </tr>
                             ))}
@@ -231,7 +240,7 @@ export default function ReceiptDetail() {
                     <div className="flex justify-between gap-12">
                         {/* Payment Info & QR */}
                         <div className="flex-1">
-                            <h3 className="text-sm font-black text-slate-900 border-b border-slate-200 pb-2 mb-4 uppercase tracking-widest">ช่องทางการชำระเงิน</h3>
+                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">Payment Methods</h3>
                             <div className="space-y-4">
                                 {selectedPaymentMethods.map(pm => (
                                     <div key={pm.id} className="flex items-start gap-4">
@@ -248,13 +257,13 @@ export default function ReceiptDetail() {
                                             <p className="text-xs text-slate-400">{pm.account_name}</p>
 
                                             {pm.type === 'promptpay' && pm.promptpay_number && (
-                                                <div className="mt-2 p-2 bg-white border border-slate-100 rounded-lg inline-block">
+                                                <div className="mt-3 p-3 bg-white border border-slate-100 rounded-xl inline-block shadow-sm">
                                                     <QRCodeSVG
                                                         value={generatePayload(pm.promptpay_number, { amount: receipt.total_amount })}
-                                                        size={100}
+                                                        size={90}
                                                         level="M"
                                                     />
-                                                    <p className="text-[10px] text-center mt-1 font-bold text-slate-400">SCAN TO PAY</p>
+                                                    <p className="text-[8px] text-center mt-1.5 font-bold text-slate-400 uppercase tracking-widest">Scan to Pay</p>
                                                 </div>
                                             )}
                                         </div>
@@ -264,28 +273,28 @@ export default function ReceiptDetail() {
                         </div>
 
                         {/* Grand Total */}
-                        <div className="w-[30%]">
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-slate-500 font-bold uppercase tracking-widest">รวมค่าสินค้า</span>
-                                    <span className="font-bold">฿{receipt.subtotal.toLocaleString()}</span>
+                        <div className="w-[35%]">
+                            <div className="space-y-3 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    <span>Subtotal</span>
+                                    <span className="text-slate-900">฿{receipt.subtotal.toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-slate-500 font-bold uppercase tracking-widest">ค่าแรง/ค่าบริการ</span>
-                                    <span className="font-bold">฿{receipt.labor_cost.toLocaleString()}</span>
+                                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    <span>Labor / Service</span>
+                                    <span className="text-slate-900">฿{receipt.labor_cost.toLocaleString()}</span>
                                 </div>
-                                <div className="h-px bg-slate-100" />
-                                <div className="flex justify-between items-center pt-2">
-                                    <span className="text-sm font-black uppercase text-slate-900 tracking-widest">รวมยอดสุทธิ</span>
-                                    <span className="text-2xl font-black text-slate-900">฿{receipt.total_amount.toLocaleString()}</span>
+                                <div className="h-px bg-slate-200 my-2" />
+                                <div className="flex justify-between items-center pt-1">
+                                    <span className="text-[11px] font-bold uppercase text-slate-900 tracking-widest">Net Total</span>
+                                    <span className="text-2xl font-bold text-slate-900">฿{receipt.total_amount.toLocaleString()}</span>
                                 </div>
                             </div>
 
                             {/* Signatures */}
-                            <div className="mt-20 pt-8 border-t border-slate-200 text-center">
-                                <p className="text-xs font-black text-slate-900 uppercase tracking-widest">ผู้รับเงิน / Receiver Signature</p>
-                                <div className="mt-12 h-px bg-slate-900 w-full mx-auto" />
-                                <p className="mt-2 text-sm font-bold text-slate-400">({profile?.full_name || 'ผู้รับเงิน'})</p>
+                            <div className="mt-16 pt-6 border-t border-slate-200 text-center">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Authorized Signature</p>
+                                <div className="mt-10 h-px bg-slate-400 w-full mx-auto" />
+                                <p className="mt-2 text-[12px] font-semibold text-slate-900">{profile?.full_name || 'Authorized Personnel'}</p>
                             </div>
                         </div>
                     </div>
@@ -299,8 +308,10 @@ export default function ReceiptDetail() {
 
             <style jsx global>{`
                 @media print {
-                    .no-print, nav, aside, button, .action-bar { display: none !important; }
-                    body { background: white; padding: 0; margin: 0; }
+                    .no-print, nav, aside, button, .action-bar, header { display: none !important; }
+                    body { background: white !important; padding: 0 !important; margin: 0 !important; }
+                    main { padding: 0 !important; margin: 0 !important; }
+                    .no-print-shadow { box-shadow: none !important; border: none !important; }
                     .printable-content { 
                         box-shadow: none !important; 
                         margin: 0 !important; 

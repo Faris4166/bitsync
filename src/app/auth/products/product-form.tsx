@@ -154,36 +154,36 @@ export default function ProductManagement() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-                    <p className="text-muted-foreground">จัดการรายการสินค้าในคลังของคุณ</p>
+                    <p className="text-muted-foreground font-medium mt-1 text-sm">จัดการรายการสินค้าในคลังของคุณ</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="rounded-full px-6 shadow-lg hover:shadow-primary/20 transition-all">
-                            <Plus className="mr-2 h-4 w-4" /> เพิ่มสินค้าใหม่
+                        <Button className="rounded-lg h-10 px-6 shadow-sm bg-primary text-primary-foreground font-bold transition-all">
+                            <Plus className="mr-2 h-5 w-5" /> Add Product
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px] rounded-[2rem]">
-                        <DialogHeader>
-                            <DialogTitle>เพิ่มสินค้า</DialogTitle>
-                            <DialogDescription>กรอกข้อมูลรายละเอียดสินค้าและอัปโหลดรูปภาพ</DialogDescription>
+                    <DialogContent className="sm:max-w-[450px] rounded-xl border border-border bg-card p-6">
+                        <DialogHeader className="space-y-2">
+                            <DialogTitle className="text-2xl font-bold tracking-tight">เพิ่มสินค้า</DialogTitle>
+                            <DialogDescription className="text-sm font-medium text-muted-foreground">กรอกข้อมูลรายละเอียดสินค้าและอัปโหลดรูปภาพ</DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleAddProduct} className="space-y-6 py-4">
                             <div className="grid gap-6">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="name">ชื่อสินค้า</Label>
+                                    <Label htmlFor="name" className="font-semibold text-muted-foreground ml-1">ชื่อสินค้า</Label>
                                     <Input
                                         id="name"
                                         value={newProduct.name}
                                         onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
                                         placeholder="เช่น เสื้อยืดลายกราฟิก"
-                                        className="rounded-xl"
+                                        className="rounded-lg h-10 border-border"
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-6">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="price">ราคา (บาท)</Label>
-                                        <div className="relative">
-                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Label htmlFor="price" className="font-semibold text-muted-foreground ml-1 text-sm">ราคา (บาท)</Label>
+                                        <div className="relative group">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors">฿</div>
                                             <Input
                                                 id="price"
                                                 type="number"
@@ -192,16 +192,16 @@ export default function ProductManagement() {
                                                     const val = parseFloat(e.target.value);
                                                     setNewProduct({ ...newProduct, price: isNaN(val) ? 0 : val });
                                                 }}
-                                                className="pl-9 rounded-xl"
+                                                className="pl-8 rounded-lg h-10 border-border"
                                                 min="0"
                                                 step="0.01"
                                             />
                                         </div>
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="quantity">จำนวนคงเหลือ</Label>
-                                        <div className="relative">
-                                            <ListOrdered className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Label htmlFor="quantity" className="font-semibold text-muted-foreground ml-1 text-sm">จำนวนคงเหลือ</Label>
+                                        <div className="relative group">
+                                            <ListOrdered className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                             <Input
                                                 id="quantity"
                                                 type="number"
@@ -210,36 +210,39 @@ export default function ProductManagement() {
                                                     const val = parseInt(e.target.value);
                                                     setNewProduct({ ...newProduct, quantity: isNaN(val) ? 0 : val });
                                                 }}
-                                                className="pl-9 rounded-xl"
+                                                className="pl-9 rounded-lg h-10 border-border font-mono"
                                                 min="0"
                                             />
                                         </div>
                                     </div>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label>รูปภาพสินค้า (สูงสุด 3MB)</Label>
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative group overflow-hidden bg-muted/20 border-2 border-dashed rounded-2xl w-32 h-32 flex items-center justify-center transition-all hover:bg-muted/30">
+                                    <Label className="font-semibold text-muted-foreground ml-1 text-sm">รูปภาพสินค้า (สูงสุด 3MB)</Label>
+                                    <div className="flex items-center gap-6">
+                                        <div className="relative group overflow-hidden bg-muted/20 border border-dashed border-border rounded-xl w-32 h-32 flex items-center justify-center transition-all hover:border-primary/40 hover:bg-muted/40">
                                             {newProduct.image_url ? (
                                                 <img
                                                     src={newProduct.image_url}
                                                     alt="Preview"
-                                                    className="w-full h-full object-cover"
+                                                    className="w-full h-full object-contain p-4 drop-shadow-sm"
                                                 />
                                             ) : (
-                                                <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
+                                                <div className="flex flex-col items-center text-muted-foreground/30">
+                                                    <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Upload</span>
+                                                </div>
                                             )}
                                             {isUploading && (
-                                                <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center">
-                                                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                                <div className="absolute inset-0 bg-background/80 backdrop-blur-md flex items-center justify-center">
+                                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex-1 space-y-2">
+                                        <div className="flex-1 space-y-3">
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                className="relative w-full rounded-xl border-dashed"
+                                                className="relative w-full rounded-lg h-10 border-border font-semibold transition-all"
                                                 disabled={isUploading}
                                             >
                                                 <Upload className="h-4 w-4 mr-2" />
@@ -256,7 +259,7 @@ export default function ProductManagement() {
                                                     type="button"
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="text-destructive w-full"
+                                                    className="text-destructive/60 hover:text-destructive hover:bg-destructive/10 w-full rounded-xl transition-all font-bold"
                                                     onClick={() => setNewProduct({ ...newProduct, image_url: '' })}
                                                 >
                                                     ลบรูปภาพ
@@ -266,10 +269,10 @@ export default function ProductManagement() {
                                     </div>
                                 </div>
                             </div>
-                            <DialogFooter>
-                                <Button type="submit" className="w-full rounded-xl" disabled={isPending || isUploading}>
-                                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    เพิ่มลงในคลัง
+                            <DialogFooter className="pt-4">
+                                <Button type="submit" className="w-full rounded-lg h-12 text-base font-bold bg-primary text-primary-foreground shadow-sm" disabled={isPending || isUploading}>
+                                    {isPending && <Loader2 className="mr-3 h-5 w-5 animate-spin" />}
+                                    Create Product
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -278,38 +281,38 @@ export default function ProductManagement() {
             </div>
 
             {isInitialLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3].map(i => (
-                        <Card key={i} className="animate-pulse rounded-[2rem] h-64 bg-muted/20 border-none" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {[1, 2, 3, 4].map(i => (
+                        <Card key={i} className="animate-pulse rounded-xl aspect-4/5 bg-muted/30 border-border" />
                     ))}
                 </div>
             ) : products.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-[3rem] bg-muted/5">
-                    <Package className="h-16 w-16 text-muted-foreground/20 mb-4" />
-                    <h3 className="text-xl font-bold text-muted-foreground">ไม่มีสินค้าในคลัง</h3>
-                    <p className="text-muted-foreground/60 max-w-xs mx-auto">เริ่มต้นด้วยการเพิ่มสินค้าชิ้นแรกของคุณเพื่อนำไปออกใบเสร็จ</p>
+                <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-xl bg-muted/5">
+                    <Package className="h-12 w-12 text-muted-foreground/20 mb-4" />
+                    <h3 className="text-lg font-bold text-muted-foreground">ไม่มีสินค้าในคลัง</h3>
+                    <p className="text-muted-foreground/60 text-sm max-w-xs mx-auto">เริ่มต้นด้วยการเพิ่มสินค้าชิ้นแรกของคุณเพื่อนำไปออกใบเสร็จ</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {products.map(product => (
-                        <Card key={product.id} className="group relative overflow-hidden rounded-[2rem] border-none bg-card shadow-sm hover:shadow-xl transition-all duration-300">
-                            <div className="aspect-square w-full relative overflow-hidden bg-muted/10">
+                        <Card key={product.id} className="group relative overflow-hidden rounded-xl border-border shadow-sm hover:shadow-md transition-all duration-300 bg-card">
+                            <div className="aspect-4/5 w-full relative overflow-hidden bg-muted/10 group-hover:bg-muted/20 transition-colors">
                                 {product.image_url ? (
                                     <img
                                         src={product.image_url}
                                         alt={product.name}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                        className="w-full h-full object-contain p-6 transition-transform duration-700 group-hover:scale-110 drop-shadow-xl"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/20">
-                                        <Package className="h-12 w-12" />
+                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/10">
+                                        <Package className="h-20 w-20" />
                                     </div>
                                 )}
-                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200">
                                     <Button
                                         variant="destructive"
                                         size="icon"
-                                        className="h-8 w-8 rounded-full shadow-lg"
+                                        className="h-8 w-8 rounded-lg shadow-md active:scale-95 transition-all"
                                         onClick={() => handleDeleteProduct(product.id!)}
                                         disabled={isPending}
                                     >
@@ -317,17 +320,18 @@ export default function ProductManagement() {
                                     </Button>
                                 </div>
                                 <div className="absolute bottom-3 left-3">
-                                    <div className="px-3 py-1 bg-background/80 backdrop-blur-md rounded-full text-xs font-bold border border-border/50">
+                                    <div className="px-3 py-1 bg-background/80 backdrop-blur-sm rounded-lg text-[9px] font-bold uppercase tracking-widest border border-border shadow-sm text-muted-foreground">
                                         Stock: {product.quantity}
                                     </div>
                                 </div>
                             </div>
                             <CardContent className="p-5">
-                                <h3 className="font-bold text-lg mb-1 truncate">{product.name}</h3>
+                                <h3 className="font-bold text-lg mb-1 truncate text-foreground/90 transition-colors">{product.name}</h3>
                                 <div className="flex items-center justify-between">
-                                    <p className="text-2xl font-black text-primary">
+                                    <p className="text-2xl font-bold text-primary tracking-tight">
                                         ฿{product.price.toLocaleString()}
                                     </p>
+                                    <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                 </div>
                             </CardContent>
                         </Card>

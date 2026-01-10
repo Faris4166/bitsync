@@ -8,18 +8,15 @@ export const metadata = {
 
 export default function HistoryPage() {
   return (
-    <div className="max-w-6xl mx-auto py-8 md:py-12 px-4 space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-primary/10 rounded-2xl">
-          <History className="h-6 w-6 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">ประวัติใบเสร็จ</h1>
-          <p className="text-muted-foreground">ตรวจสอบและจัดการใบเสร็จที่เคยออกทั้งหมด</p>
-        </div>
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight">Transaction History</h1>
+        <p className="text-sm font-medium text-muted-foreground">Review and manage all your past receipts and sales.</p>
       </div>
 
-      <HistoryTable />
+      <div className="w-full">
+        <HistoryTable />
+      </div>
     </div>
   )
 }

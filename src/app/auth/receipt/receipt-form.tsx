@@ -109,8 +109,8 @@ export default function ReceiptForm() {
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-20">
             <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-2xl">
-                    <Receipt className="h-6 w-6 text-primary" />
+                <div className="p-2.5 bg-primary/10 rounded-xl">
+                    <Receipt className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">สร้างใบเสร็จใหม่</h1>
@@ -120,7 +120,7 @@ export default function ReceiptForm() {
 
             <div className="grid gap-8">
                 {/* --- CUSTOMER INFO --- */}
-                <Card className="rounded-[2rem] border-none shadow-sm bg-card/50 backdrop-blur-sm">
+                <Card className="rounded-xl border border-border shadow-sm bg-card">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <User className="h-5 w-5 text-primary" /> ข้อมูลลูกค้า
@@ -128,19 +128,19 @@ export default function ReceiptForm() {
                     </CardHeader>
                     <CardContent className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label>ชื่อ-นามสกุล</Label>
+                            <Label className="font-semibold text-muted-foreground">ชื่อ-นามสกุล</Label>
                             <Input
                                 placeholder="สมชาย ใจดี"
-                                className="rounded-xl"
+                                className="rounded-lg h-10 border-border"
                                 value={customer.name}
                                 onChange={e => setCustomer({ ...customer, name: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>เบอร์โทรศัพท์</Label>
+                            <Label className="font-semibold text-muted-foreground">เบอร์โทรศัพท์</Label>
                             <Input
                                 placeholder="08x-xxx-xxxx"
-                                className="rounded-xl"
+                                className="rounded-lg h-10 border-border"
                                 value={customer.phone}
                                 onChange={e => setCustomer({ ...customer, phone: e.target.value })}
                             />
@@ -149,35 +149,35 @@ export default function ReceiptForm() {
                 </Card>
 
                 {/* --- ITEMS --- */}
-                <Card className="rounded-[2rem] border-none shadow-sm bg-card/50 backdrop-blur-sm">
+                <Card className="rounded-xl border border-border shadow-sm bg-card">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="flex items-center gap-2">
                             <Package className="h-5 w-5 text-primary" /> รายการสินค้า
                         </CardTitle>
-                        <Button variant="outline" size="sm" onClick={addItem} className="rounded-full">
-                            <Plus className="h-4 w-4 mr-1" /> เพิ่มรายการ
+                        <Button variant="outline" size="sm" onClick={addItem} className="rounded-lg border-border font-semibold px-4">
+                            <Plus className="h-4 w-4 mr-1.5" /> Add Item
                         </Button>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[40%]">สินค้า</TableHead>
-                                    <TableHead>ราคา (฿)</TableHead>
-                                    <TableHead className="w-[100px]">จำนวน</TableHead>
-                                    <TableHead className="text-right">รวม</TableHead>
+                                <TableRow className="border-border/40 hover:bg-transparent">
+                                    <TableHead className="w-[40%] font-semibold">สินค้า</TableHead>
+                                    <TableHead className="font-semibold">ราคา (฿)</TableHead>
+                                    <TableHead className="w-[100px] font-semibold">จำนวน</TableHead>
+                                    <TableHead className="text-right font-semibold">รวม</TableHead>
                                     <TableHead className="w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {selectedItems.map((item, index) => (
-                                    <TableRow key={index}>
+                                    <TableRow key={index} className="border-border/20">
                                         <TableCell>
                                             <div className="relative">
                                                 <Input
                                                     list={`products-${index}`}
                                                     placeholder="ชื่อสินค้า (พิมพ์เองได้)"
-                                                    className="rounded-lg h-9"
+                                                    className="rounded-lg h-10 border-border/40 bg-background/50"
                                                     value={item.name}
                                                     onChange={e => {
                                                         const val = e.target.value
@@ -199,7 +199,7 @@ export default function ReceiptForm() {
                                         <TableCell>
                                             <Input
                                                 type="number"
-                                                className="rounded-lg h-9"
+                                                className="rounded-lg h-10 border-border/40 bg-background/50"
                                                 value={item.price || ''}
                                                 onChange={e => updateItem(index, 'price', Number(e.target.value))}
                                             />
@@ -207,22 +207,22 @@ export default function ReceiptForm() {
                                         <TableCell>
                                             <Input
                                                 type="number"
-                                                className="rounded-lg h-9"
+                                                className="rounded-lg h-10 border-border/40 bg-background/50"
                                                 value={item.quantity || ''}
                                                 onChange={e => updateItem(index, 'quantity', Number(e.target.value))}
                                             />
                                         </TableCell>
-                                        <TableCell className="text-right font-medium">
+                                        <TableCell className="text-right font-bold">
                                             ฿{(item.price * item.quantity).toLocaleString()}
                                         </TableCell>
                                         <TableCell>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-8 w-8 text-destructive"
+                                                className="h-9 w-9 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                                                 onClick={() => setSelectedItems(selectedItems.filter((_, i) => i !== index))}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <Trash2 className="h-4.5 w-4.5" />
                                             </Button>
                                         </TableCell>
                                     </TableRow>
@@ -234,7 +234,7 @@ export default function ReceiptForm() {
 
                 {/* --- TOTALS & LABOR --- */}
                 <div className="grid md:grid-cols-2 gap-8">
-                    <Card className="rounded-[2rem] border-none shadow-sm bg-card/50 backdrop-blur-sm">
+                    <Card className="rounded-xl border border-border shadow-sm bg-card">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <Wallet className="h-5 w-5 text-primary" /> ค่าบริการ
@@ -242,10 +242,10 @@ export default function ReceiptForm() {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-2">
-                                <Label>ค่าแรง / ค่าซ่อม (บาท)</Label>
+                                <Label className="font-semibold text-muted-foreground border-none">ค่าแรง / ค่าซ่อม (บาท)</Label>
                                 <Input
                                     type="number"
-                                    className="rounded-xl text-lg font-bold"
+                                    className="rounded-lg h-12 text-xl font-bold border-border"
                                     placeholder="0.00"
                                     value={laborCost}
                                     onChange={e => setLaborCost(Number(e.target.value))}
@@ -254,41 +254,45 @@ export default function ReceiptForm() {
                         </CardContent>
                     </Card>
 
-                    <Card className="rounded-[3rem] border-none bg-primary text-primary-foreground shadow-2xl overflow-hidden relative">
-                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <Card className="rounded-xl border border-border bg-primary text-primary-foreground shadow-sm overflow-hidden relative group">
+                        <div className="absolute top-0 right-0 p-6 opacity-10">
                             <Receipt className="h-32 w-32" />
                         </div>
-                        <CardContent className="p-8 space-y-4">
-                            <div className="flex justify-between items-center opacity-80">
+                        <CardContent className="p-8 space-y-5 relative z-10">
+                            <div className="flex justify-between items-center opacity-70 text-xs font-bold tracking-widest uppercase">
                                 <span>ค่าสินค้า</span>
                                 <span>฿{subtotal.toLocaleString()}</span>
                             </div>
-                            <div className="flex justify-between items-center opacity-80">
+                            <div className="flex justify-between items-center opacity-70 text-xs font-bold tracking-widest uppercase">
                                 <span>ค่าแรง</span>
                                 <span>฿{laborCost.toLocaleString()}</span>
                             </div>
-                            <div className="h-px bg-white/20 my-2" />
-                            <div className="flex justify-between items-center text-3xl font-black">
-                                <span>รวมสุทธิ</span>
-                                <span>฿{total.toLocaleString()}</span>
+                            <div className="h-px bg-white/10 my-4" />
+                            <div className="flex justify-between items-end">
+                                <span className="font-bold opacity-60 text-xs uppercase tracking-widest">รวมสุทธิ</span>
+                                <span className="text-4xl font-bold tracking-tight">฿{total.toLocaleString()}</span>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* --- PAYMENT METHOD CHOICE --- */}
-                <Card className="rounded-[2rem] border-none shadow-sm bg-card/50 backdrop-blur-sm">
+                <Card className="rounded-xl border border-border shadow-sm bg-card">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Check className="h-5 w-5 text-primary" /> ช่องทางการชำระเงิน
                         </CardTitle>
-                        <CardDescription>เลือกช่องทางที่จะให้ปรากฏบนใบเสร็จ</CardDescription>
+                        <CardDescription className="font-medium">เลือกช่องทางที่จะให้ปรากฏบนใบเสร็จ</CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-4">
+                    <CardContent className="grid gap-3">
                         {paymentMethods.map((pm) => (
-                            <div key={pm.id} className="flex items-center space-x-3 p-4 border rounded-2xl hover:bg-muted/50 transition-colors">
+                            <div key={pm.id} className="flex items-center space-x-4 p-4 border border-border rounded-xl hover:bg-accent transition-all group cursor-pointer" onClick={() => {
+                                if (selectedPayments.includes(pm.id)) setSelectedPayments(selectedPayments.filter(id => id !== pm.id))
+                                else setSelectedPayments([...selectedPayments, pm.id])
+                            }}>
                                 <Checkbox
                                     id={pm.id}
+                                    className="rounded-lg h-6 w-6"
                                     checked={selectedPayments.includes(pm.id)}
                                     onCheckedChange={(checked) => {
                                         if (checked) setSelectedPayments([...selectedPayments, pm.id])
@@ -298,27 +302,27 @@ export default function ReceiptForm() {
                                 <Label htmlFor={pm.id} className="flex-1 cursor-pointer">
                                     {pm.type === 'promptpay' ? (
                                         <div className="flex justify-between items-center">
-                                            <span className="font-bold">PromptPay</span>
-                                            <span className="text-muted-foreground">{pm.promptpay_number}</span>
+                                            <span className="font-black text-lg">PromptPay</span>
+                                            <span className="text-muted-foreground font-medium tracking-wide">{pm.promptpay_number}</span>
                                         </div>
                                     ) : (
                                         <div className="flex justify-between items-center">
-                                            <span className="font-bold">{pm.bank_name}</span>
-                                            <span className="text-muted-foreground">{pm.account_number} ({pm.account_name})</span>
+                                            <span className="font-black text-lg">{pm.bank_name}</span>
+                                            <span className="text-muted-foreground font-medium tracking-wide">{pm.account_number} ({pm.account_name})</span>
                                         </div>
                                     )}
                                 </Label>
                             </div>
                         ))}
                     </CardContent>
-                    <CardFooter className="justify-center border-t py-6">
+                    <CardFooter className="justify-center border-t border-border py-8">
                         <Button
-                            className="w-full max-w-md rounded-full h-12 text-lg font-bold shadow-lg"
+                            className="w-full max-w-lg rounded-lg h-12 text-base font-bold bg-primary text-primary-foreground shadow-sm hover:opacity-90 transition-all group border-none"
                             onClick={handleSubmit}
                             disabled={isLoading}
                         >
-                            {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ChevronRight className="mr-2 h-5 w-5" />}
-                            ดูตัวอย่างใบเสร็จ
+                            {isLoading ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : <ChevronRight className="mr-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />}
+                            Preview Receipt
                         </Button>
                     </CardFooter>
                 </Card>

@@ -11,15 +11,13 @@ export default async function SettingsPage() {
   const paymentMethods = await getPaymentMethods()
 
   return (
-    <div className="flex flex-col items-center justify-start min-h-[calc(100vh-64px)] w-full py-8 md:py-12">
-      <div className="w-full max-w-5xl px-6">
-        <div className="mb-10 space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground text-sm font-medium">
-            จัดการข้อมูลส่วนตัว ร้านค้า และช่องทางการชำระเงินของคุณ
-          </p>
-        </div>
+    <div className="w-full pb-20 animate-in fade-in duration-700">
+      <div className="mb-10 space-y-2">
+        <h1 className="text-3xl font-extrabold tracking-tight">Business Settings</h1>
+        <p className="text-sm font-medium text-muted-foreground/80">Tailor your profile, branding, and payment options.</p>
+      </div>
 
+      <div className="w-full">
         <SettingsForm
           initialProfile={profile}
           initialPaymentMethods={paymentMethods}

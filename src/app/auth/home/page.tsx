@@ -7,8 +7,8 @@ export const metadata = {
 
 export default function HomeUserPage() {
   return (
-    <div className="flex flex-col items-center justify-start min-h-screen w-full py-8 md:py-12 px-4">
-      <div className="w-full max-w-6xl mx-auto">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="w-full">
         <Dashboard />
       </div>
     </div>

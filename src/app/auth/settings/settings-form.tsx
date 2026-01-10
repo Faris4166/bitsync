@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Plus, Trash2, Building2, User, CreditCard, Wallet, Upload, Image as ImageIcon } from 'lucide-react'
+import { Loader2, Plus, Trash2, Building2, User, CreditCard, Wallet, Upload, Image as ImageIcon, Smartphone } from 'lucide-react'
 import { toast } from "sonner"
 
 // --- Types ---
@@ -219,192 +219,230 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
     }
 
     return (
-        <div className="w-full space-y-6">
-            <Tabs defaultValue="profile" className="w-full">
-                <TabsList className="grid w-full max-w-md grid-cols-3 mb-8">
-                    <TabsTrigger value="profile" className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        <span>ส่วนตัว</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="shop" className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        <span>ร้านค้า</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="payment" className="flex items-center gap-2">
-                        <Wallet className="h-4 w-4" />
-                        <span>การชำระเงิน</span>
-                    </TabsTrigger>
-                </TabsList>
+        <div className="w-full">
+            <Tabs defaultValue="profile" className="flex flex-col md:flex-row gap-0 md:gap-12 min-h-[600px]">
+                {/* --- Sidebar Navigation --- */}
+                <div className="w-full md:w-64 shrink-0">
+                    <TabsList className="flex flex-row md:flex-col h-auto w-full justify-start bg-transparent p-0 gap-1 overflow-x-auto no-scrollbar border-b md:border-b-0 md:border-r border-border/50 pb-4 md:pb-0 md:pr-4">
+                        <TabsTrigger
+                            value="profile"
+                            className="flex items-center justify-start gap-3 w-full rounded-xl px-4 py-3 font-bold text-sm transition-all duration-200
+                                       text-muted-foreground hover:text-foreground hover:bg-accent/50
+                                       data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
+                        >
+                            <User className="h-4 w-4" />
+                            <span>Profile</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="shop"
+                            className="flex items-center justify-start gap-3 w-full rounded-xl px-4 py-3 font-bold text-sm transition-all duration-200
+                                       text-muted-foreground hover:text-foreground hover:bg-accent/50
+                                       data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
+                        >
+                            <Building2 className="h-4 w-4" />
+                            <span>Shop Details</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="payment"
+                            className="flex items-center justify-start gap-3 w-full rounded-xl px-4 py-3 font-bold text-sm transition-all duration-200
+                                       text-muted-foreground hover:text-foreground hover:bg-accent/50
+                                       data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
+                        >
+                            <Wallet className="h-4 w-4" />
+                            <span>Payment Methods</span>
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
-                {/* --- PROFILE TAB content --- */}
-                <TabsContent value="profile" className="mt-0 focus-visible:outline-none w-full">
-                    <Card className="w-full">
-                        <CardHeader>
-                            <CardTitle>ข้อมูลส่วนตัว</CardTitle>
-                            <CardDescription>จัดการข้อมูลติดต่อส่วนตัวสำหรับการสื่อสารในระบบ</CardDescription>
-                        </CardHeader>
-                        <form onSubmit={handleProfileSubmit}>
-                            <CardContent className="space-y-6">
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="full_name">ชื่อ-นามสกุล</Label>
-                                        <Input
-                                            id="full_name"
-                                            value={profile.full_name}
-                                            onChange={e => setProfile({ ...profile, full_name: e.target.value })}
-                                            placeholder="กรอกชื่อ-นามสกุลจริง"
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="phone">เบอร์โทรศัพท์</Label>
-                                        <Input
-                                            id="phone"
-                                            value={profile.phone}
-                                            onChange={e => setProfile({ ...profile, phone: e.target.value })}
-                                            placeholder="08x-xxx-xxxx"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="address">ที่อยู่ติดต่อ</Label>
-                                    <Textarea
-                                        id="address"
-                                        className="min-h-[120px]"
-                                        value={profile.address}
-                                        onChange={e => setProfile({ ...profile, address: e.target.value })}
-                                        placeholder="ที่อยู่สำหรับจัดส่งเอกสารและข้อมูลอื่นๆ"
-                                    />
-                                </div>
-                            </CardContent>
-                            <CardFooter className="justify-end border-t p-4 px-6 bg-muted/20">
-                                <Button type="submit" disabled={isPending}>
-                                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    บันทึกข้อมูลส่วนตัว
-                                </Button>
-                            </CardFooter>
-                        </form>
-                    </Card>
-                </TabsContent>
+                {/* --- Main Content Area --- */}
+                <div className="flex-1 mt-8 md:mt-0 max-w-3xl">
+                    {/* --- PROFILE TAB content --- */}
+                    <TabsContent value="profile" className="focus-visible:outline-none m-0 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <section className="space-y-8">
+                            <div className="space-y-1 px-1">
+                                <h2 className="text-2xl font-bold tracking-tight">Personal Information</h2>
+                                <p className="text-sm font-medium text-muted-foreground">Manage your identity and contact details for the system.</p>
+                            </div>
 
-                {/* --- SHOP TAB content --- */}
-                <TabsContent value="shop" className="mt-0 focus-visible:outline-none w-full">
-                    <Card className="w-full">
-                        <CardHeader>
-                            <CardTitle>ข้อมูลร้านค้า</CardTitle>
-                            <CardDescription>ข้อมูลแบรนด์ที่จะปรากฏบนใบเสร็จและหน้าจัดการทั้งหมด</CardDescription>
-                        </CardHeader>
-                        <form onSubmit={handleProfileSubmit}>
-                            <CardContent className="space-y-6">
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="shop_name">ชื่อร้านค้า</Label>
-                                        <Input
-                                            id="shop_name"
-                                            value={profile.shop_name}
-                                            onChange={e => setProfile({ ...profile, shop_name: e.target.value })}
-                                            placeholder="ระบุชื่อร้านค้าของคุณ"
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="logo">โลโก้ร้านค้า</Label>
-                                        <div className="flex items-center gap-4">
-                                            <div className="relative group overflow-hidden bg-muted/20 border-2 border-dashed rounded-xl w-32 h-32 flex items-center justify-center transition-all hover:bg-muted/30">
-                                                {profile.shop_logo_url ? (
-                                                    <img
-                                                        src={profile.shop_logo_url}
-                                                        alt="Logo Preview"
-                                                        className="w-full h-full object-contain p-2"
-                                                    />
-                                                ) : (
-                                                    <div className="flex flex-col items-center text-muted-foreground">
-                                                        <ImageIcon className="h-8 w-8 mb-1 opacity-20" />
-                                                        <span className="text-[10px] font-bold uppercase tracking-tight opacity-40">No Logo</span>
-                                                    </div>
-                                                )}
-                                                {isUploading && (
-                                                    <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center">
-                                                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                                                    </div>
-                                                )}
+                            <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
+                                <form onSubmit={handleProfileSubmit}>
+                                    <CardContent className="space-y-8 p-8">
+                                        <div className="grid md:grid-cols-2 gap-8">
+                                            <div className="grid gap-3">
+                                                <Label htmlFor="full_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Full Name</Label>
+                                                <Input
+                                                    id="full_name"
+                                                    className="rounded-xl h-12 border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all font-medium"
+                                                    value={profile.full_name}
+                                                    onChange={e => setProfile({ ...profile, full_name: e.target.value })}
+                                                    placeholder="Enter your full name"
+                                                />
                                             </div>
-                                            <div className="flex flex-col gap-2">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="relative"
-                                                    disabled={isUploading}
-                                                >
-                                                    <Upload className="h-4 w-4 mr-2" />
-                                                    เลือกรูปภาพ
-                                                    <input
-                                                        type="file"
-                                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                                        accept="image/*"
-                                                        onChange={handleFileUpload}
-                                                    />
-                                                </Button>
-                                                <p className="text-[10px] text-muted-foreground">PNG, JPG ขนาดไม่เกิน 2MB</p>
-                                                {profile.shop_logo_url && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-destructive h-7 px-2"
-                                                        onClick={() => setProfile({ ...profile, shop_logo_url: '' })}
-                                                    >
-                                                        ลบรูปภาพ
-                                                    </Button>
-                                                )}
+                                            <div className="grid gap-3">
+                                                <Label htmlFor="phone" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Phone Number</Label>
+                                                <Input
+                                                    id="phone"
+                                                    className="rounded-xl h-12 border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all font-medium"
+                                                    value={profile.phone}
+                                                    onChange={e => setProfile({ ...profile, phone: e.target.value })}
+                                                    placeholder="08x-xxx-xxxx"
+                                                />
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="justify-end border-t p-4 px-6 bg-muted/20">
-                                <Button type="submit" disabled={isPending}>
-                                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    บันทึกข้อมูลร้านค้า
-                                </Button>
-                            </CardFooter>
-                        </form>
-                    </Card>
-                </TabsContent>
+                                        <div className="grid gap-3">
+                                            <Label htmlFor="address" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Business Address</Label>
+                                            <Textarea
+                                                id="address"
+                                                className="min-h-[160px] rounded-xl border-border/60 bg-background/50 p-4 focus-visible:ring-primary/20 transition-all font-medium resize-none leading-relaxed"
+                                                value={profile.address}
+                                                onChange={e => setProfile({ ...profile, address: e.target.value })}
+                                                placeholder="Your detailed address for receipts..."
+                                            />
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="justify-end border-t border-border/50 p-6 bg-muted/5">
+                                        <Button type="submit" className="rounded-xl h-11 px-8 font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary text-primary-foreground" disabled={isPending}>
+                                            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Update Profile
+                                        </Button>
+                                    </CardFooter>
+                                </form>
+                            </Card>
+                        </section>
+                    </TabsContent>
 
-                {/* --- PAYMENT TAB content --- */}
-                <TabsContent value="payment" className="mt-0 focus-visible:outline-none space-y-6 w-full">
-                    <Card className="w-full">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                            <div>
-                                <CardTitle>ช่องทางการชำระเงิน</CardTitle>
-                                <CardDescription>บัญชีรับเงินสำหรับสร้างใบเสร็จและแจ้งลูกค้า</CardDescription>
+                    {/* --- SHOP TAB content --- */}
+                    <TabsContent value="shop" className="focus-visible:outline-none m-0 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <section className="space-y-8">
+                            <div className="space-y-1 px-1">
+                                <h2 className="text-2xl font-bold tracking-tight">Shop Branding</h2>
+                                <p className="text-sm font-medium text-muted-foreground">Your business identity as it appears on receipts and dashboard.</p>
                             </div>
-                            <Button onClick={() => setShowAddPayment(true)} variant="outline" size="sm">
-                                <Plus className="mr-2 h-4 w-4" /> เพิ่มช่องทางใหม่
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="pt-6">
+
+                            <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
+                                <form onSubmit={handleProfileSubmit}>
+                                    <CardContent className="space-y-10 p-8">
+                                        <div className="grid gap-8">
+                                            <div className="grid gap-3">
+                                                <Label htmlFor="shop_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Business Name</Label>
+                                                <Input
+                                                    id="shop_name"
+                                                    className="rounded-xl h-12 border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all font-medium"
+                                                    value={profile.shop_name}
+                                                    onChange={e => setProfile({ ...profile, shop_name: e.target.value })}
+                                                    placeholder="Your business name"
+                                                />
+                                            </div>
+
+                                            <div className="grid gap-3">
+                                                <Label htmlFor="logo" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Brand Logo</Label>
+                                                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 mt-1">
+                                                    <div className="relative group overflow-hidden bg-muted/20 border border-dashed border-border/60 rounded-2xl w-40 h-40 flex items-center justify-center transition-all hover:border-primary/40 hover:bg-muted/30 shadow-inner">
+                                                        {profile.shop_logo_url ? (
+                                                            <img
+                                                                src={profile.shop_logo_url}
+                                                                alt="Logo Preview"
+                                                                className="w-full h-full object-contain p-6 drop-shadow-sm transition-transform group-hover:scale-105 duration-500"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex flex-col items-center text-muted-foreground/30">
+                                                                <ImageIcon className="h-10 w-10 mb-2 opacity-50" />
+                                                                <span className="text-[10px] font-bold uppercase tracking-widest">Logo</span>
+                                                            </div>
+                                                        )}
+                                                        {isUploading && (
+                                                            <div className="absolute inset-0 bg-background/80 backdrop-blur-md flex items-center justify-center">
+                                                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col gap-4 mt-2">
+                                                        <div className="relative">
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="rounded-xl h-11 px-6 border-border font-bold transition-all shadow-sm hover:shadow-md bg-background"
+                                                                disabled={isUploading}
+                                                            >
+                                                                <Upload className="h-4 w-4 mr-2" />
+                                                                Upload Image
+                                                                <input
+                                                                    type="file"
+                                                                    className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                    accept="image/*"
+                                                                    onChange={handleFileUpload}
+                                                                />
+                                                            </Button>
+                                                        </div>
+                                                        <p className="text-[11px] font-medium text-muted-foreground/60 leading-relaxed max-w-[180px]">
+                                                            High resolution PNG or JPG recommended (Max 2MB).
+                                                        </p>
+                                                        {profile.shop_logo_url && (
+                                                            <Button
+                                                                type="button"
+                                                                variant="link"
+                                                                size="sm"
+                                                                className="text-destructive h-auto p-0 font-bold text-xs justify-start opacity-70 hover:opacity-100 transition-opacity"
+                                                                onClick={() => setProfile({ ...profile, shop_logo_url: '' })}
+                                                            >
+                                                                <Trash2 className="h-3 w-3 mr-1" /> Remove Current Logo
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="justify-end border-t border-border/50 p-6 bg-muted/5">
+                                        <Button type="submit" className="rounded-xl h-11 px-8 font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary text-primary-foreground" disabled={isPending}>
+                                            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Save Branding
+                                        </Button>
+                                    </CardFooter>
+                                </form>
+                            </Card>
+                        </section>
+                    </TabsContent>
+
+                    {/* --- PAYMENT TAB content --- */}
+                    <TabsContent value="payment" className="focus-visible:outline-none m-0 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <section className="space-y-8">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
+                                <div className="space-y-1">
+                                    <h2 className="text-2xl font-bold tracking-tight">Payment Methods</h2>
+                                    <p className="text-sm font-medium text-muted-foreground">Configure how you receive payments from customers.</p>
+                                </div>
+                                <Button onClick={() => setShowAddPayment(true)} className="rounded-xl h-11 px-6 font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0">
+                                    <Plus className="mr-2 h-4 w-4" /> Add Account
+                                </Button>
+                            </div>
+
                             {paymentMethods.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed rounded-xl bg-muted/5">
-                                    <Wallet className="h-10 w-10 text-muted-foreground/30 mb-4" />
-                                    <h3 className="font-bold text-muted-foreground">ยังไม่ได้เพิ่มช่องทางชำระเงิน</h3>
-                                    <p className="text-sm text-muted-foreground opacity-60">เริ่มรับเงินด้วยการเพิ่มบัญชีธนาคารหรือ PromptPay</p>
+                                <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-[2rem] bg-muted/5 border-border/40">
+                                    <div className="p-5 rounded-full bg-muted/20 mb-6">
+                                        <Wallet className="h-12 w-12 text-muted-foreground/30" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-foreground">No accounts configured</h3>
+                                    <p className="text-sm text-muted-foreground max-w-[320px] mt-2 leading-relaxed opacity-80">
+                                        Add your PromptPay or Bank Account to start receiving payments on your digital receipts.
+                                    </p>
                                 </div>
                             ) : (
-                                <div className="grid md:grid-cols-2 gap-4">
+                                <div className="grid gap-4">
                                     {paymentMethods.map(pm => (
-                                        <div key={pm.id} className="group flex items-center justify-between p-4 rounded-xl border bg-card hover:border-primary/20 transition-all">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`p-2.5 rounded-lg ${pm.type === 'promptpay' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                                                    {pm.type === 'promptpay' ? <CreditCard className="h-5 w-5" /> : <Building2 className="h-5 w-5" />}
+                                        <div key={pm.id} className="group flex items-center justify-between p-6 rounded-2xl border border-border/60 bg-card hover:bg-accent/5 hover:border-primary/20 transition-all duration-300 shadow-sm hover:shadow-md">
+                                            <div className="flex items-center gap-6">
+                                                <div className={`p-4 rounded-xl shadow-inner bg-muted/30 border border-border/40 ${pm.type === 'promptpay' ? 'text-primary' : 'text-primary'}`}>
+                                                    {pm.type === 'promptpay' ? <Smartphone className="h-6 w-6" /> : <Building2 className="h-6 w-6" />}
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-sm">
-                                                        {pm.type === 'promptpay' ? 'QR PromptPay' : pm.bank_name}
+                                                    <h4 className="font-bold text-lg">
+                                                        {pm.type === 'promptpay' ? 'PromptPay' : pm.bank_name}
                                                     </h4>
-                                                    <p className="text-muted-foreground text-xs font-medium opacity-70">
+                                                    <p className="text-muted-foreground/70 text-sm font-bold tracking-tight mt-1.5 font-mono">
                                                         {pm.type === 'promptpay'
-                                                            ? `${pm.promptpay_number} (${pm.promptpay_type === 'phone_number' ? 'มือถือ' : 'บัตร ปชช.'})`
+                                                            ? `${pm.promptpay_number} (${pm.promptpay_type === 'phone_number' ? 'Phone' : 'National ID'})`
                                                             : `${pm.account_number} • ${pm.account_name}`
                                                         }
                                                     </p>
@@ -413,108 +451,113 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                                                className="opacity-0 group-hover:opacity-100 rounded-xl h-10 w-10 text-destructive/40 hover:text-destructive hover:bg-destructive/10 transition-all"
                                                 onClick={() => handleDeletePayment(pm.id!)}
                                                 disabled={isPending}
                                             >
-                                                <Trash2 className="h-4 w-4" />
+                                                <Trash2 className="h-5 w-5" />
                                             </Button>
                                         </div>
                                     ))}
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
 
-                    {showAddPayment && (
-                        <Card className="rounded-[2rem] border-blue-500/20 bg-blue-500/5 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-                            <CardHeader>
-                                <CardTitle className="text-lg">เพิ่มช่องทางชำระเงินใหม่</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="grid gap-2">
-                                    <Label>ประเภทบัญชี</Label>
-                                    <Select
-                                        value={newPayment.type}
-                                        onValueChange={val => setNewPayment({ ...newPayment, type: val as any })}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="เลือกประเภทบัญชี" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="promptpay">QR PromptPay (พร้อมเพย์)</SelectItem>
-                                            <SelectItem value="bank_account">บัญชีธนาคาร</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {newPayment.type === 'promptpay' ? (
-                                    <div className="grid md:grid-cols-2 gap-6 animate-in fade-in duration-300">
-                                        <div className="grid gap-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">ประเภทพร้อมเพย์</Label>
+                            {showAddPayment && (
+                                <Card className="rounded-2xl border border-primary/20 bg-primary/5 shadow-xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+                                    <CardHeader className="pb-6 pt-10 px-10">
+                                        <CardTitle className="text-xl font-bold tracking-tight">New Payment Account</CardTitle>
+                                        <CardDescription className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-2">Account Configuration</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-10 px-10 pb-8">
+                                        <div className="grid gap-4">
+                                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Account Type</Label>
                                             <Select
-                                                value={newPayment.promptpay_type || 'phone_number'}
-                                                onValueChange={val => setNewPayment({ ...newPayment, promptpay_type: val as any })}
+                                                value={newPayment.type}
+                                                onValueChange={val => setNewPayment({ ...newPayment, type: val as any })}
                                             >
-                                                <SelectTrigger className="w-full">
-                                                    <SelectValue placeholder="เลือกประเภทพร้อมเพย์" />
+                                                <SelectTrigger className="w-full h-12 rounded-xl bg-background border-border/60 font-medium">
+                                                    <SelectValue placeholder="Select type" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="phone_number">เบอร์โทรศัพท์ (08x...)</SelectItem>
-                                                    <SelectItem value="citizen_id">เลขบัตรประชาชน (13 หลัก)</SelectItem>
+                                                    <SelectItem value="promptpay">PromptPay (QR Support)</SelectItem>
+                                                    <SelectItem value="bank_account">Traditional Bank Account</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="grid gap-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">หมายเลขพร้อมเพย์</Label>
-                                            <Input
-                                                value={newPayment.promptpay_number || ''}
-                                                onChange={e => setNewPayment({ ...newPayment, promptpay_number: e.target.value })}
-                                                placeholder={newPayment.promptpay_type === 'phone_number' ? "0812345678" : "1234567890123"}
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="grid md:grid-cols-2 gap-6 animate-in fade-in duration-300">
-                                        <div className="grid gap-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">ชื่อธนาคาร</Label>
-                                            <Input
-                                                value={newPayment.bank_name || ''}
-                                                onChange={e => setNewPayment({ ...newPayment, bank_name: e.target.value })}
-                                                placeholder="เช่น กสิกรไทย, ไทยพาณิชย์"
-                                            />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">เลขที่บัญชี</Label>
-                                            <Input
-                                                value={newPayment.account_number || ''}
-                                                onChange={e => setNewPayment({ ...newPayment, account_number: e.target.value })}
-                                                placeholder="xxx-x-xxxxx-x"
-                                            />
-                                        </div>
-                                        <div className="md:col-span-2 grid gap-2">
-                                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">ชื่อบัญชี</Label>
-                                            <Input
-                                                value={newPayment.account_name || ''}
-                                                onChange={e => setNewPayment({ ...newPayment, account_name: e.target.value })}
-                                                placeholder="ชื่อเจ้าของบัญชีภาษาไทยหรืออังกฤษ"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                            <CardFooter className="justify-end gap-3 border-t p-4 px-6 bg-muted/20">
-                                <Button variant="ghost" onClick={() => setShowAddPayment(false)} disabled={isPending}>
-                                    ยกเลิก
-                                </Button>
-                                <Button onClick={handleAddPayment} disabled={isPending}>
-                                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    สร้างช่องทางใหม่
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    )}
-                </TabsContent>
+
+                                        {newPayment.type === 'promptpay' ? (
+                                            <div className="grid md:grid-cols-2 gap-8 animate-in fade-in duration-500">
+                                                <div className="grid gap-4">
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">PromptPay Type</Label>
+                                                    <Select
+                                                        value={newPayment.promptpay_type || 'phone_number'}
+                                                        onValueChange={val => setNewPayment({ ...newPayment, promptpay_type: val as any })}
+                                                    >
+                                                        <SelectTrigger className="w-full h-12 rounded-xl bg-background border-border/60">
+                                                            <SelectValue placeholder="Select type" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="phone_number">Phone Number</SelectItem>
+                                                            <SelectItem value="citizen_id">Citizen ID</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="grid gap-4">
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">PromptPay Number</Label>
+                                                    <Input
+                                                        className="h-12 rounded-xl bg-background border-border/60 font-mono font-bold"
+                                                        value={newPayment.promptpay_number || ''}
+                                                        onChange={e => setNewPayment({ ...newPayment, promptpay_number: e.target.value })}
+                                                        placeholder={newPayment.promptpay_type === 'phone_number' ? "08..." : "1234..."}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="grid md:grid-cols-2 gap-8 animate-in fade-in duration-500">
+                                                <div className="grid gap-4">
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Bank Name</Label>
+                                                    <Input
+                                                        className="h-12 rounded-xl bg-background border-border/60 font-medium"
+                                                        value={newPayment.bank_name || ''}
+                                                        onChange={e => setNewPayment({ ...newPayment, bank_name: e.target.value })}
+                                                        placeholder="e.g. KBank, SCB"
+                                                    />
+                                                </div>
+                                                <div className="grid gap-4">
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Account Number</Label>
+                                                    <Input
+                                                        className="h-12 rounded-xl bg-background border-border/60 font-mono font-bold"
+                                                        value={newPayment.account_number || ''}
+                                                        onChange={e => setNewPayment({ ...newPayment, account_number: e.target.value })}
+                                                        placeholder="xxx-x-xxxxx-x"
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2 grid gap-4">
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Account Holder Name</Label>
+                                                    <Input
+                                                        className="h-12 rounded-xl bg-background border-border/60 font-medium"
+                                                        value={newPayment.account_name || ''}
+                                                        onChange={e => setNewPayment({ ...newPayment, account_name: e.target.value })}
+                                                        placeholder="Name on bank account"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                    <CardFooter className="justify-end gap-3 border-t border-border/20 p-8 bg-muted/5">
+                                        <Button variant="ghost" size="sm" onClick={() => setShowAddPayment(false)} disabled={isPending} className="rounded-xl font-bold px-6">
+                                            Cancel
+                                        </Button>
+                                        <Button size="sm" onClick={handleAddPayment} disabled={isPending} className="rounded-xl font-bold h-11 px-8">
+                                            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Add Account
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            )}
+                        </section>
+                    </TabsContent>
+                </div>
             </Tabs>
         </div>
     )
