@@ -87,7 +87,7 @@ export default function ReceiptPreview() {
         fetchData()
     }, [router])
 
-    const handleSaveAndDownload = async () => {
+    const handleSaveAndDownload = React.useCallback(async () => {
         if (!draft) return
         setIsSaving(true)
 
@@ -131,7 +131,7 @@ export default function ReceiptPreview() {
         } finally {
             setIsSaving(false)
         }
-    }
+    }, [draft, router])
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -142,9 +142,9 @@ export default function ReceiptPreview() {
 
     if (!draft) return null
 
-    const selectedPaymentMethods = paymentMethods.filter(pm =>
-        draft.payment_info?.selected_ids?.includes(pm.id)
-    )
+    const selectedPaymentMethods = React.useMemo(() => paymentMethods.filter(pm =>
+        draft?.payment_info?.selected_ids?.includes(pm.id)
+    ), [paymentMethods, draft?.payment_info?.selected_ids])
 
     return (
         <div className="max-w-5xl mx-auto space-y-6 pb-20 px-4">

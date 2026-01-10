@@ -83,7 +83,7 @@ export default function ReceiptDetail() {
         fetchData()
     }, [id])
 
-    const exportPDF = async () => {
+    const exportPDF = React.useCallback(async () => {
         if (!receiptRef.current) return
         setIsSaving(true)
         try {
@@ -111,7 +111,7 @@ export default function ReceiptDetail() {
         } finally {
             setIsSaving(false)
         }
-    }
+    }, [receipt?.receipt_number])
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -122,9 +122,9 @@ export default function ReceiptDetail() {
 
     if (!receipt) return <div>ไม่พบข้อมูลใบเสร็จ</div>
 
-    const selectedPaymentMethods = paymentMethods.filter(pm =>
-        receipt.payment_info?.selected_ids?.includes(pm.id)
-    )
+    const selectedPaymentMethods = React.useMemo(() => paymentMethods.filter(pm =>
+        receipt?.payment_info?.selected_ids?.includes(pm.id)
+    ), [paymentMethods, receipt?.payment_info?.selected_ids])
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">

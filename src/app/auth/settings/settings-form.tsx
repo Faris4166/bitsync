@@ -83,7 +83,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
 
     const [isUploading, setIsUploading] = useState(false)
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
 
@@ -124,9 +124,9 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
         } finally {
             setIsUploading(false)
         }
-    }
+    }, [])
 
-    const fetchPaymentMethods = async () => {
+    const fetchPaymentMethods = React.useCallback(async () => {
         try {
             const res = await fetch('/api/payment-methods')
             if (res.ok) {
@@ -136,11 +136,11 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
         } catch (err) {
             console.error('Error fetching payment methods:', err)
         }
-    }
+    }, [])
 
     // --- Handlers ---
 
-    const handleProfileSubmit = async (e: React.FormEvent) => {
+    const handleProfileSubmit = React.useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
         startTransition(async () => {
             try {
@@ -163,9 +163,9 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                 toast.error(err.message || 'เกิดข้อผิดพลาดในการบันทึก')
             }
         })
-    }
+    }, [profile, router])
 
-    const handleAddPayment = async () => {
+    const handleAddPayment = React.useCallback(async () => {
         startTransition(async () => {
             try {
                 const res = await fetch('/api/payment-methods', {
@@ -195,9 +195,9 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                 toast.error('เกิดข้อผิดพลาดในการเพิ่มช่องทางชำระเงิน')
             }
         })
-    }
+    }, [newPayment, fetchPaymentMethods, router])
 
-    const handleDeletePayment = async (id: string) => {
+    const handleDeletePayment = React.useCallback(async (id: string) => {
         if (!confirm('ยืนยันการลบช่องทางชำระเงิน?')) return
 
         startTransition(async () => {
@@ -216,7 +216,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                 toast.error('เกิดข้อผิดพลาดในการลบ')
             }
         })
-    }
+    }, [router])
 
     return (
         <div className="w-full">

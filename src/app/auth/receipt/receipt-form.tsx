@@ -65,27 +65,29 @@ export default function ReceiptForm() {
         fetchData()
     }, [])
 
-    const addItem = () => {
-        setSelectedItems([...selectedItems, { id: '', name: '', price: 0, quantity: 1 }])
-    }
+    const addItem = React.useCallback(() => {
+        setSelectedItems(prev => [...prev, { id: '', name: '', price: 0, quantity: 1 }])
+    }, [])
 
-    const updateItem = (index: number, field: string, value: any) => {
-        const newItems = [...selectedItems]
-        if (field === 'id') {
-            const prod = products.find(p => p.id === value)
-            if (prod) {
-                newItems[index] = { ...newItems[index], id: prod.id, name: prod.name, price: Number(prod.price) }
+    const updateItem = React.useCallback((index: number, field: string, value: any) => {
+        setSelectedItems(prev => {
+            const newItems = [...prev]
+            if (field === 'id') {
+                const prod = products.find(p => p.id === value)
+                if (prod) {
+                    newItems[index] = { ...newItems[index], id: prod.id, name: prod.name, price: Number(prod.price) }
+                }
+            } else {
+                newItems[index] = { ...newItems[index], [field]: value }
             }
-        } else {
-            newItems[index] = { ...newItems[index], [field]: value }
-        }
-        setSelectedItems(newItems)
-    }
+            return newItems
+        })
+    }, [products])
 
-    const subtotal = selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const total = subtotal + laborCost
+    const subtotal = React.useMemo(() => selectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0), [selectedItems])
+    const total = React.useMemo(() => subtotal + laborCost, [subtotal, laborCost])
 
-    const handleSubmit = async () => {
+    const handleSubmit = React.useCallback(async () => {
         if (!customer.name) return toast.error('กรุณาระบุชื่อลูกค้า')
         if (selectedItems.length === 0) return toast.error('กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการ')
 
@@ -104,7 +106,7 @@ export default function ReceiptForm() {
         // Save to session storage instead of database
         sessionStorage.setItem('receipt_draft', JSON.stringify(draftData))
         router.push('/auth/receipt/preview')
-    }
+    }, [customer, selectedItems, laborCost, subtotal, total, selectedPayments, router])
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-20">

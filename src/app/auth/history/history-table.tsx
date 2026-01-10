@@ -38,27 +38,28 @@ export default function HistoryTable() {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
 
-    useEffect(() => {
-        const fetchReceipts = async () => {
-            try {
-                const res = await fetch('/api/receipts')
-                if (res.ok) {
-                    const data = await res.json()
-                    setReceipts(data)
-                }
-            } catch (err) {
-                console.error('Error fetching receipts:', err)
-            } finally {
-                setLoading(false)
+    const fetchReceipts = React.useCallback(async () => {
+        try {
+            const res = await fetch('/api/receipts')
+            if (res.ok) {
+                const data = await res.json()
+                setReceipts(data)
             }
+        } catch (err) {
+            console.error('Error fetching receipts:', err)
+        } finally {
+            setLoading(false)
         }
-        fetchReceipts()
     }, [])
 
-    const filteredReceipts = receipts.filter(r =>
+    useEffect(() => {
+        fetchReceipts()
+    }, [fetchReceipts])
+
+    const filteredReceipts = React.useMemo(() => receipts.filter(r =>
         r.customer_name.toLowerCase().includes(search.toLowerCase()) ||
         r.receipt_number.toLowerCase().includes(search.toLowerCase())
-    )
+    ), [receipts, search])
 
     if (loading) return (
         <div className="flex flex-col items-center justify-center py-20 gap-4">

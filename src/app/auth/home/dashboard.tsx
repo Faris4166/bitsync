@@ -23,9 +23,14 @@ import {
     XAxis,
     YAxis,
     Tooltip,
-    ResponsiveContainer
+    ResponsiveContainer,
+    Pie,
+    PieChart,
+    Cell,
+    Label as RechartsLabel
 } from 'recharts'
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import { toast } from 'sonner'
@@ -40,8 +45,16 @@ type Receipt = {
 
 const chartConfig = {
     income: {
-        label: "รายได้",
-        color: "var(--primary)",
+        label: "รายได้รวม",
+        color: "#3b82f6", // Blue
+    },
+    products: {
+        label: "สินค้า",
+        color: "#10b981", // Emerald
+    },
+    labor: {
+        label: "ค่าแรง",
+        color: "#f59e0b", // Amber
     },
 } satisfies ChartConfig
 
@@ -50,6 +63,7 @@ export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true)
     const [isExporting, setIsExporting] = useState(false)
     const dashboardRef = useRef<HTMLDivElement>(null)
+    const [dateRange, setDateRange] = useState('30d')
 
     useEffect(() => {
         const fetchReceipts = async () => {
@@ -67,57 +81,145 @@ export default function Dashboard() {
         fetchReceipts()
     }, [])
 
+    const isInitialLoading = isLoading && receipts.length === 0
+
+    // Filter receipts by date range
+    const filteredReceipts = React.useMemo(() => {
+        if (dateRange === 'all') return receipts
+        const now = new Date()
+        const days = parseInt(dateRange)
+        const cutoff = new Date(now.setDate(now.getDate() - days))
+        return receipts.filter(r => new Date(r.created_at) >= cutoff)
+    }, [receipts, dateRange])
+
     // Process data for chart
-    const chartData = React.useMemo(() => {
+    const areaChartData = React.useMemo(() => {
         const groups: Record<string, number> = {}
-        // Get last 7 days
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date()
-            date.setDate(date.getDate() - i)
-            const label = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
-            groups[label] = 0
+        const isLongRange = ['180d', '365d', 'all'].includes(dateRange)
+
+        if (dateRange === '30d') {
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date()
+                date.setDate(date.getDate() - i)
+                const label = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+                groups[label] = 0
+            }
+        } else if (isLongRange) {
+            // Group by month
+            const months = dateRange === 'all' ? 12 : (parseInt(dateRange) / 30)
+            for (let i = months - 1; i >= 0; i--) {
+                const date = new Date()
+                date.setMonth(date.getMonth() - i)
+                const label = date.toLocaleDateString('th-TH', { month: 'short', year: '2-digit' })
+                groups[label] = 0
+            }
+        } else {
+            // 90d, group by week or simplified days
+            for (let i = 89; i >= 0; i -= 3) {
+                const date = new Date()
+                date.setDate(date.getDate() - i)
+                const label = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+                groups[label] = 0
+            }
         }
 
-        receipts.forEach(r => {
-            const label = new Date(r.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+        filteredReceipts.forEach(r => {
+            const date = new Date(r.created_at)
+            const label = isLongRange
+                ? date.toLocaleDateString('th-TH', { month: 'short', year: '2-digit' })
+                : date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+
             if (groups[label] !== undefined) {
                 groups[label] += Number(r.total_amount)
             }
         })
 
         return Object.entries(groups).map(([date, income]) => ({ date, income }))
-    }, [receipts])
+    }, [filteredReceipts, dateRange])
 
-    const totalIncome = receipts.reduce((sum, r) => sum + Number(r.total_amount), 0)
-    const totalLabor = receipts.reduce((sum, r) => sum + Number(r.labor_cost), 0)
-    const totalProducts = receipts.reduce((sum, r) => sum + Number(r.subtotal), 0)
-    const totalOrders = receipts.length
+    const pieChartData = React.useMemo(() => [
+        { name: "สินค้า", value: filteredReceipts.reduce((sum, r) => sum + Number(r.subtotal), 0), fill: "var(--color-products)" },
+        { name: "ค่าแรง", value: filteredReceipts.reduce((sum, r) => sum + Number(r.labor_cost), 0), fill: "var(--color-labor)" },
+    ], [filteredReceipts])
 
-    const handleExportPDF = async () => {
+    const { totalIncome, totalLabor, totalProducts, totalOrders } = React.useMemo(() => ({
+        totalIncome: filteredReceipts.reduce((sum, r) => sum + Number(r.total_amount), 0),
+        totalLabor: filteredReceipts.reduce((sum, r) => sum + Number(r.labor_cost), 0),
+        totalProducts: filteredReceipts.reduce((sum, r) => sum + Number(r.subtotal), 0),
+        totalOrders: filteredReceipts.length
+    }), [filteredReceipts])
+
+    const handleExportPDF = React.useCallback(async () => {
         if (!dashboardRef.current) return
         setIsExporting(true)
         try {
             const canvas = await html2canvas(dashboardRef.current, {
                 scale: 2,
                 useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
+                logging: true,
+                backgroundColor: '#ffffff',
+                windowWidth: 1400,
+                onclone: (clonedDoc) => {
+                    const dashboard = clonedDoc.getElementById('dashboard-container')
+                    if (!dashboard) return
+
+                    // Deep sanitize all elements to remove oklch/lab
+                    const elements = dashboard.getElementsByTagName('*')
+                    for (let i = 0; i < elements.length; i++) {
+                        const el = elements[i] as HTMLElement
+                        const style = window.getComputedStyle(el)
+
+                        // Force a safe background and border color if they look like they use oklch
+                        // (Usually they show up as 'rgb' in computed style, but html2canvas's parser 
+                        // might still be hitting the raw CSS rules)
+
+                        // Explicitly overwrite problematic styles with safe fallbacks
+                        if (el.classList.contains('bg-primary')) el.style.backgroundColor = '#3b82f6'
+                        if (el.classList.contains('text-primary')) el.style.color = '#3b82f6'
+                        if (el.classList.contains('bg-card')) el.style.backgroundColor = '#ffffff'
+                        if (el.classList.contains('border-border')) el.style.borderColor = '#e5e7eb'
+
+                        // Remove animations as they cause ghosting
+                        el.style.animation = 'none'
+                        el.style.transition = 'none'
+                    }
+
+                    // Special handling for the dark luxury card
+                    const luxuryCard = clonedDoc.querySelector('.luxury-summary-card') as HTMLElement
+                    if (luxuryCard) {
+                        luxuryCard.style.background = '#1e293b'
+                        luxuryCard.style.color = '#ffffff'
+                    }
+
+                    // Hide no-print elements
+                    const noPrint = clonedDoc.querySelectorAll('.no-print')
+                    noPrint.forEach(el => (el as HTMLElement).style.display = 'none')
+                }
             })
-            const imgData = canvas.toDataURL('image/png')
-            const pdf = new jsPDF('l', 'mm', 'a4')
+
+            const imgData = canvas.toDataURL('image/png', 1.0)
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4',
+                compress: true
+            })
+
             const pdfWidth = pdf.internal.pageSize.getWidth()
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST')
             pdf.save(`dashboard-report-${new Date().toISOString().slice(0, 10)}.pdf`)
             toast.success('ดาวน์โหลดรายงานใบสรุปผลสำเร็จ')
         } catch (err) {
+            console.error('PDF Export Error:', err)
             toast.error('ไม่สามารถส่งออก PDF ได้')
         } finally {
             setIsExporting(false)
         }
-    }
+    }, [dashboardRef])
 
-    if (isLoading) return (
+    if (isInitialLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="text-muted-foreground animate-pulse">กำลังวิเคราะห์ข้อมูล...</p>
@@ -125,20 +227,33 @@ export default function Dashboard() {
     )
 
     return (
-        <div className="space-y-8 pb-10" ref={dashboardRef}>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">แผงควบคุมระบบ</h1>
-                    <p className="text-muted-foreground">สรุปผลการดำเนินงานและสถิติรายได้ของคุณ</p>
+        <div id="dashboard-container" className="space-y-8 pb-10" ref={dashboardRef}>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 no-print">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-primary rounded-2xl shadow-lg shadow-primary/20">
+                        <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">Metrics Insights</h1>
+                        <p className="text-muted-foreground font-medium">ภาพรวมการเติบโตและสถิติคลังข้อมูล</p>
+                    </div>
                 </div>
-                <Button
-                    className="rounded-lg shadow-sm h-10 px-4 bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-all border-none"
-                    onClick={handleExportPDF}
-                    disabled={isExporting}
-                >
-                    {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                    Export PDF
-                </Button>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <Select value={dateRange} onValueChange={setDateRange}>
+                        <SelectTrigger className="w-[180px] h-10 rounded-xl border-border bg-card shadow-sm font-medium">
+                            <Calendar className="mr-2 h-4 w-4 opacity-50" />
+                            <SelectValue placeholder="เลือกช่วงเวลา" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-border shadow-xl">
+                            <SelectItem value="30d">1 เดือนล่าสุด</SelectItem>
+                            <SelectItem value="90d">3 เดือนล่าสุด</SelectItem>
+                            <SelectItem value="180d">6 เดือนล่าสุด</SelectItem>
+                            <SelectItem value="365d">1 ปีล่าสุด</SelectItem>
+                            <SelectItem value="all">ทั้งหมด (ไม่อิสระ)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {/* --- STAT CARDS --- */}
@@ -200,100 +315,217 @@ export default function Dashboard() {
             </div>
 
             {/* --- CHART SECTION --- */}
-            <div className="grid gap-6 lg:grid-cols-7">
-                <Card className="lg:col-span-4 rounded-xl border border-border shadow-sm bg-card">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base font-bold">
-                            <TrendingUp className="h-4.5 w-4.5 text-primary" /> Revenues (Last 7 Days)
-                        </CardTitle>
-                        <CardDescription>Daily total income overview</CardDescription>
+            <div className="grid gap-6 lg:grid-cols-12">
+                {/* Area Chart */}
+                <Card className="lg:col-span-8 rounded-2xl border border-border shadow-md bg-card overflow-hidden">
+                    <CardHeader className="border-b border-border/50 bg-muted/20 pb-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                    <TrendingUp className="h-5 w-5 text-primary" /> Revenue Velocity
+                                </CardTitle>
+                                <CardDescription>แนวโน้มรายได้รวมตามช่วงเวลาที่เลือก</CardDescription>
+                            </div>
+                        </div>
                     </CardHeader>
-                    <CardContent className="pl-2 pr-4 h-[350px]">
+                    <CardContent className="pt-6 h-[400px]">
                         <ChartContainer config={chartConfig} className="h-full w-full">
                             <AreaChart
-                                data={chartData}
-                                margin={{ left: 12, right: 12, top: 20 }}
+                                data={areaChartData}
+                                margin={{ left: 0, right: 10, top: 10, bottom: 0 }}
                             >
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.1} />
-                                <XAxis
-                                    dataKey="date"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={8}
-                                    minTickGap={32}
-                                />
-                                <YAxis
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(val) => `฿${val.toLocaleString()}`}
-                                    hide={true}
-                                />
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent indicator="dot" />}
-                                />
                                 <defs>
-                                    <linearGradient id="fillIncome" x1="0" y1="0" x2="0" y2="1">
+                                    <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="var(--color-income)" stopOpacity={0.3} />
                                         <stop offset="95%" stopColor="var(--color-income)" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
+                                <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/40" />
+                                <XAxis
+                                    dataKey="date"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                                    tickMargin={12}
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                                    tickFormatter={(value) => `฿${value.toLocaleString()}`}
+                                    width={80}
+                                />
+                                <ChartTooltip content={<ChartTooltipContent />} />
                                 <Area
+                                    type="monotone"
                                     dataKey="income"
-                                    type="natural"
-                                    fill="url(#fillIncome)"
-                                    fillOpacity={0.4}
                                     stroke="var(--color-income)"
                                     strokeWidth={3}
-                                    stackId="a"
+                                    fillOpacity={1}
+                                    fill="url(#colorIncome)"
+                                    animationDuration={1500}
                                 />
                             </AreaChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-3 rounded-xl border border-border shadow-sm bg-primary text-primary-foreground overflow-hidden relative">
-                    <div className="absolute top-0 right-0 p-6 opacity-10">
-                        <LayoutDashboard className="h-40 w-40 rotate-12" />
-                    </div>
-                    <CardHeader>
-                        <CardTitle className="text-xl font-bold">Analytics Summary</CardTitle>
-                        <CardDescription className="text-primary-foreground/60">Bitsync Analytics Engine</CardDescription>
+                {/* Pie Chart / Distribution */}
+                <Card className="lg:col-span-4 rounded-2xl border border-border shadow-md bg-card overflow-hidden flex flex-col">
+                    <CardHeader className="border-b border-border/50 bg-muted/20 pb-4">
+                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                            <Users className="h-5 w-5 text-primary" /> Revenue Mix
+                        </CardTitle>
+                        <CardDescription>สัดส่วนรายได้ สินค้า vs ค่าแรง</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6 pt-4">
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center opacity-80 text-sm">
-                                <span>รายได้จากสินค้า</span>
-                                <span>฿{totalProducts.toLocaleString()}</span>
-                            </div>
-                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-white transition-all duration-1000"
-                                    style={{ width: totalIncome > 0 ? `${(totalProducts / totalIncome) * 100}%` : '0%' }}
+                    <CardContent className="flex-1 pt-6 pb-2">
+                        <ChartContainer config={chartConfig} className="mx-auto aspect-4/3 w-full max-h-[300px]">
+                            <PieChart>
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={<ChartTooltipContent hideLabel />}
                                 />
-                            </div>
+                                <Pie
+                                    data={pieChartData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    strokeWidth={5}
+                                    paddingAngle={5}
+                                >
+                                    <RechartsLabel
+                                        content={({ viewBox }) => {
+                                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                                return (
+                                                    <text
+                                                        x={viewBox.cx}
+                                                        y={viewBox.cy}
+                                                        textAnchor="middle"
+                                                        dominantBaseline="middle"
+                                                    >
+                                                        <tspan
+                                                            x={viewBox.cx}
+                                                            y={viewBox.cy}
+                                                            className="fill-foreground text-2xl font-bold"
+                                                        >
+                                                            ฿{(totalIncome / 1000).toFixed(1)}K
+                                                        </tspan>
+                                                        <tspan
+                                                            x={viewBox.cx}
+                                                            y={(viewBox.cy || 0) + 24}
+                                                            className="fill-muted-foreground text-xs"
+                                                        >
+                                                            Total Net
+                                                        </tspan>
+                                                    </text>
+                                                )
+                                            }
+                                        }}
+                                    />
+                                </Pie>
+                                <ChartLegend content={<ChartLegendContent />} className="flex-wrap gap-2" />
+                            </PieChart>
+                        </ChartContainer>
+                    </CardContent>
+                    <CardFooter className="flex-col gap-2 text-sm pt-0 pb-6 items-start px-6">
+                        <div className="flex items-center gap-2 font-bold leading-none">
+                            Revenue split for chosen period <ArrowUpRight className="h-4 w-4 text-emerald-500" />
                         </div>
-
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center opacity-80 text-sm">
-                                <span>รายได้จากค่าแรง</span>
-                                <span>฿{totalLabor.toLocaleString()}</span>
-                            </div>
-                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-amber-400 transition-all duration-1000"
-                                    style={{ width: totalIncome > 0 ? `${(totalLabor / totalIncome) * 100}%` : '0%' }}
-                                />
-                            </div>
+                        <div className="leading-none text-muted-foreground">
+                            สินค้า {((totalProducts / totalIncome) * 100).toFixed(1)}% | ค่าแรง {((totalLabor / totalIncome) * 100).toFixed(1)}%
                         </div>
+                    </CardFooter>
+                </Card>
+            </div>
 
-                        <div className="mt-8 p-6 bg-white/5 rounded-xl border border-white/10">
-                            <p className="text-xs opacity-60 uppercase tracking-widest font-bold">Total Net Balance</p>
-                            <h2 className="text-3xl font-bold mt-1.5">฿{totalIncome.toLocaleString()}</h2>
+            {/* Final Summary Card (Luxury Dark) */}
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card className="luxury-summary-card rounded-2xl border-none shadow-xl bg-linear-to-br from-slate-900 to-slate-800 text-white overflow-hidden relative group">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.05),transparent_70%)]" />
+                    <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                        <LayoutDashboard className="h-48 w-48 rotate-12" />
+                    </div>
+                    <CardContent className="p-8 relative">
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-2">Performance Intelligence</p>
+                        <h3 className="text-2xl font-bold mb-6">สรุปผลการวิเคราะห์</h3>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 backdrop-blur-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-primary" />
+                                    <span className="text-slate-300 font-medium">ยอดขายผลิตภัณฑ์</span>
+                                </div>
+                                <span className="text-lg font-bold">฿{totalProducts.toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 backdrop-blur-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-2 h-2 rounded-full bg-amber-400" />
+                                    <span className="text-slate-300 font-medium">รายได้ค่าบริการ</span>
+                                </div>
+                                <span className="text-lg font-bold">฿{totalLabor.toLocaleString()}</span>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
+
+                <Card className="rounded-2xl border border-border shadow-lg bg-card p-1">
+                    <div className="h-full w-full rounded-[15px] bg-muted/30 p-8 flex flex-col justify-center border border-border/50">
+                        <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] mb-2">Net Cash Inflow</span>
+                        <h2 className="text-5xl font-black tracking-tighter text-foreground mb-4 tabular-nums">฿{totalIncome.toLocaleString()}</h2>
+                        <div className="flex items-center gap-2 text-emerald-500 font-bold bg-emerald-500/10 w-fit px-3 py-1 rounded-full text-sm">
+                            <Users className="h-4 w-4" />
+                            <span>Confirmed Assets</span>
+                        </div>
+                        <p className="mt-8 text-sm text-muted-foreground leading-relaxed">
+                            ระบบได้คำนวณและลดทอนความเสี่ยงทางการเงินจากรายการค้างชำระทั้งหมดในช่วงเวลาที่คุณเลือก
+                        </p>
+                    </div>
+                </Card>
             </div>
+            <style jsx global>{`
+                .pdf-exporting {
+                    width: 1400px !important;
+                    background: white !important;
+                    padding: 40px !important;
+                    color: black !important;
+                    /* Force HEX overrides for common variables that use oklch */
+                    --background: #ffffff !important;
+                    --foreground: #000000 !important;
+                    --primary: #3b82f6 !important;
+                    --primary-foreground: #ffffff !important;
+                    --card: #ffffff !important;
+                    --card-foreground: #000000 !important;
+                    --muted: #f3f4f6 !important;
+                    --muted-foreground: #6b7280 !important;
+                    --border: #e5e7eb !important;
+                    --accent: #f3f4f6 !important;
+                    --secondary: #f3f4f6 !important;
+                }
+                .pdf-exporting * {
+                    border-color: #e5e7eb !important;
+                    /* Ensure no oklch colors are leaked through computed styles */
+                    outline-color: #e5e7eb !important;
+                }
+                /* Special fixes for the Luxury Card in PDF */
+                .pdf-exporting .bg-gradient-to-br,
+                .pdf-exporting .bg-linear-to-br {
+                    background: #1e293b !important; /* Fixed slate-800 for PDF */
+                }
+                .pdf-exporting .no-print {
+                    display: none !important;
+                }
+                .pdf-exporting .grid {
+                    display: grid !important;
+                }
+                .pdf-exporting .animate-pulse,
+                .pdf-exporting .animate-spin {
+                    animation: none !important;
+                }
+            `}</style>
         </div>
     )
+}
+
+function CardFooter({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+    return <div className={`flex items-center p-6 pt-0 ${className}`} {...props}>{children}</div>
 }

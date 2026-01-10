@@ -35,7 +35,7 @@ export default function ProductManagement() {
 
     // --- API Helpers ---
 
-    const fetchProducts = async () => {
+    const fetchProducts = React.useCallback(async () => {
         try {
             const res = await fetch('/api/products')
             if (res.ok) {
@@ -47,13 +47,13 @@ export default function ProductManagement() {
         } finally {
             setIsInitialLoading(false)
         }
-    }
+    }, [])
 
     React.useEffect(() => {
         fetchProducts()
     }, [])
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
 
@@ -90,9 +90,9 @@ export default function ProductManagement() {
         } finally {
             setIsUploading(false)
         }
-    }
+    }, [])
 
-    const handleAddProduct = async (e: React.FormEvent) => {
+    const handleAddProduct = React.useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
         if (!newProduct.name || newProduct.price < 0) {
             toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
@@ -127,9 +127,9 @@ export default function ProductManagement() {
                 toast.error(err.message || 'เกิดข้อผิดพลาดที่ไม่รู้จัก')
             }
         })
-    }
+    }, [newProduct, fetchProducts])
 
-    const handleDeleteProduct = async (id: string) => {
+    const handleDeleteProduct = React.useCallback(async (id: string) => {
         if (!confirm('ยืนยันการลบสินค้านี้?')) return
 
         startTransition(async () => {
@@ -147,7 +147,7 @@ export default function ProductManagement() {
                 toast.error('เกิดข้อผิดพลาดในการลบ')
             }
         })
-    }
+    }, [])
 
     return (
         <div className="w-full max-w-6xl mx-auto space-y-8">
