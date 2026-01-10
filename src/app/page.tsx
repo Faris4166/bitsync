@@ -52,7 +52,7 @@ export default function LandingPage() {
 
       {/* --- Navbar --- */}
       <nav className="fixed top-0 w-full z-50 border-b border-border/40 glass">
-        <div className="flex items-center justify-between px-8 py-4 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between px-4 md:px-8 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-3 group cursor-pointer">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center transition-all duration-500 group-hover:rotate-360 shadow-lg shadow-primary/20">
               <Sparkles className="text-primary-foreground h-6 w-6 fill-current" />
@@ -80,7 +80,7 @@ export default function LandingPage() {
       </nav>
 
       {/* --- Hero Section --- */}
-      <section className="relative pt-48 pb-24 px-6">
+      <section className="relative pt-32 pb-16 md:pt-48 md:pb-24 px-6">
         <div className="max-w-7xl mx-auto flex flex-col items-center">
           {/* Badge */}
           <motion.div
@@ -99,7 +99,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="text-7xl md:text-9xl font-black tracking-[-0.05em] leading-[0.85] text-center mb-10 selection:bg-primary selection:text-primary-foreground"
+            className="text-5xl sm:text-7xl md:text-9xl font-black tracking-[-0.05em] leading-[0.85] text-center mb-6 md:mb-10 selection:bg-primary selection:text-primary-foreground"
           >
             Sync Fast. <br />
             <span className="text-primary bg-clip-text">Grow Faster.</span>
@@ -109,7 +109,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.8 }}
-            className="text-xl md:text-2xl text-muted-foreground text-center max-w-3xl mb-14 font-medium leading-relaxed"
+            className="text-lg sm:text-xl md:text-2xl text-muted-foreground text-center max-w-3xl mb-10 md:mb-14 font-medium leading-relaxed"
           >
             จัดการธุรกิจของคุณด้วยระบบ POS อัจฉริยะ <br className="hidden md:block" />
             ที่มาพร้อมกับความเร็วระดับอัลตร้า ดีไซน์ที่สวยงาม และความแม่นยำสูงสุด
@@ -124,7 +124,7 @@ export default function LandingPage() {
             <SignUpButton mode="modal" forceRedirectUrl="/auth/home">
               <Button
                 size="lg"
-                className="h-20 px-12 rounded-[2rem] bg-primary hover:bg-primary/90 text-white text-xl font-black shadow-2xl shadow-primary/30 transition-all duration-300 hover:scale-105 active:scale-95 group border-none"
+                className="h-16 md:h-20 px-8 md:px-12 rounded-[1.5rem] md:rounded-[2rem] bg-primary hover:bg-primary/90 text-white text-lg md:text-xl font-black shadow-2xl shadow-primary/30 transition-all duration-300 hover:scale-105 active:scale-95 group border-none"
               >
                 เริ่มใช้งานฟรีตอนนี้
                 <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-2 transition-transform" />
@@ -155,8 +155,8 @@ export default function LandingPage() {
               </div>
 
               {/* Mockup Content */}
-              <div className="p-10 grid grid-cols-12 gap-8 h-full min-h-[500px]">
-                <div className="col-span-3 space-y-6">
+              <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 h-full min-h-[400px] md:min-h-[500px]">
+                <div className="hidden md:block md:col-span-3 space-y-6">
                   <div className="h-10 w-3/4 bg-primary/20 rounded-xl" />
                   <div className="space-y-4">
                     {[1, 2, 3, 4].map((i) => (
@@ -164,13 +164,13 @@ export default function LandingPage() {
                     ))}
                   </div>
                 </div>
-                <div className="col-span-9 space-y-8">
-                  <div className="grid grid-cols-3 gap-6">
+                <div className="col-span-1 md:col-span-9 space-y-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-32 bg-card border border-border/20 rounded-3xl shadow-sm glass transition-transform hover:scale-105" />
+                      <div key={i} className="h-24 md:h-32 bg-card border border-border/20 rounded-3xl shadow-sm glass transition-transform hover:scale-105" />
                     ))}
                   </div>
-                  <div className="h-64 w-full bg-card/40 border border-border/10 rounded-3xl shadow-lg glass flex items-end p-8 gap-4 overflow-hidden">
+                  <div className="h-48 md:h-64 w-full bg-card/40 border border-border/10 rounded-3xl shadow-lg glass flex items-end p-4 md:p-8 gap-2 md:gap-4 overflow-hidden">
                     {[40, 70, 45, 90, 65, 80, 55, 75, 60, 85].map((h, i) => (
                       <motion.div
                         key={i}
@@ -189,10 +189,10 @@ export default function LandingPage() {
       </section>
 
       {/* --- Features --- */}
-      <section className="py-40 px-6 relative">
+      <section className="py-20 md:py-40 px-6 relative">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col items-center text-center mb-32">
-            <h2 className="text-5xl md:text-6xl font-black tracking-tight mb-6">Designed for Performance.</h2>
+          <div className="flex flex-col items-center text-center mb-16 md:mb-32">
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight mb-6">Designed for Performance.</h2>
             <div className="w-24 h-2 bg-primary rounded-full mb-8" />
             <p className="text-xl text-muted-foreground max-w-2xl font-medium leading-relaxed">
               เราสร้างเครื่องมือที่ตอบโจทย์การทำงานที่รวดเร็วและมีประสิทธิภาพที่สุดสำหรับธุรกิจของคุณ
@@ -223,8 +223,8 @@ export default function LandingPage() {
       </section>
 
       {/* --- Footer --- */}
-      <footer className="py-20 border-t border-border/40 relative">
-        <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row items-center justify-between gap-10">
+      <footer className="py-10 md:py-20 border-t border-border/40 relative">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Sparkles className="text-primary-foreground h-5 w-5 fill-current" />
