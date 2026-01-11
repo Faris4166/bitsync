@@ -17,11 +17,6 @@ export default function UserPage({
           <div className="flex items-center gap-4">
             <SidebarTrigger className="hover:bg-accent hover:text-foreground transition-colors rounded-md h-8 w-8" />
             <div className="h-4 w-px bg-border/60" />
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-2.5 py-1 rounded-full bg-muted/50 border border-border">
-                Dashboard
-              </span>
-            </div>
           </div>
         </header>
 

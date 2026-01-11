@@ -234,7 +234,7 @@ export default function Dashboard() {
                         <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">Metrics Insights</h1>
+                        <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">ข้อมูลเชิงลึก</h1>
                         <p className="text-muted-foreground font-medium">ภาพรวมการเติบโตและสถิติคลังข้อมูล</p>
                     </div>
                 </div>
@@ -322,7 +322,7 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                    <TrendingUp className="h-5 w-5 text-primary" /> Revenue Velocity
+                                    <TrendingUp className="h-5 w-5 text-primary" /> แนวโน้มรายได้
                                 </CardTitle>
                                 <CardDescription>แนวโน้มรายได้รวมตามช่วงเวลาที่เลือก</CardDescription>
                             </div>
@@ -374,7 +374,7 @@ export default function Dashboard() {
                 <Card className="lg:col-span-4 rounded-2xl border border-border shadow-md bg-card overflow-hidden flex flex-col">
                     <CardHeader className="border-b border-border/50 bg-muted/20 pb-4">
                         <CardTitle className="text-lg font-bold flex items-center gap-2">
-                            <Users className="h-5 w-5 text-primary" /> Revenue Mix
+                            <Users className="h-5 w-5 text-primary" /> สัดส่วนรายได้
                         </CardTitle>
                         <CardDescription>สัดส่วนรายได้ สินค้า vs ค่าแรง</CardDescription>
                     </CardHeader>
@@ -416,7 +416,7 @@ export default function Dashboard() {
                                                             y={(viewBox.cy || 0) + 24}
                                                             className="fill-muted-foreground text-xs"
                                                         >
-                                                            Total Net
+                                                            ยอดสุทธิ
                                                         </tspan>
                                                     </text>
                                                 )
@@ -430,7 +430,7 @@ export default function Dashboard() {
                     </CardContent>
                     <CardFooter className="flex-col gap-2 text-sm pt-0 pb-6 items-start px-6">
                         <div className="flex items-center gap-2 font-bold leading-none">
-                            Revenue split for chosen period <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                            สัดส่วนรายได้ตามช่วงเวลา <ArrowUpRight className="h-4 w-4 text-emerald-500" />
                         </div>
                         <div className="leading-none text-muted-foreground">
                             สินค้า {((totalProducts / totalIncome) * 100).toFixed(1)}% | ค่าแรง {((totalLabor / totalIncome) * 100).toFixed(1)}%
@@ -447,7 +447,7 @@ export default function Dashboard() {
                         <LayoutDashboard className="h-48 w-48 rotate-12" />
                     </div>
                     <CardContent className="p-8 relative">
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-2">Performance Intelligence</p>
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-2">ประสิทธิภาพการดำเนินงาน</p>
                         <h3 className="text-2xl font-bold mb-6">สรุปผลการวิเคราะห์</h3>
                         <div className="space-y-4">
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 backdrop-blur-sm">
@@ -470,11 +470,11 @@ export default function Dashboard() {
 
                 <Card className="rounded-2xl border border-border shadow-lg bg-card p-1">
                     <div className="h-full w-full rounded-[15px] bg-muted/30 p-8 flex flex-col justify-center border border-border/50">
-                        <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] mb-2">Net Cash Inflow</span>
+                        <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] mb-2">กระแสเงินสดรับสุทธิ</span>
                         <h2 className="text-5xl font-black tracking-tighter text-foreground mb-4 tabular-nums">฿{totalIncome.toLocaleString()}</h2>
                         <div className="flex items-center gap-2 text-emerald-500 font-bold bg-emerald-500/10 w-fit px-3 py-1 rounded-full text-sm">
                             <Users className="h-4 w-4" />
-                            <span>Confirmed Assets</span>
+                            <span>ยอดที่ยืนยันแล้ว</span>
                         </div>
                         <p className="mt-8 text-sm text-muted-foreground leading-relaxed">
                             ระบบได้คำนวณและลดทอนความเสี่ยงทางการเงินจากรายการค้างชำระทั้งหมดในช่วงเวลาที่คุณเลือก

@@ -7,9 +7,23 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, Trash2, Receipt, User, Phone, Package, Wallet, Check, ChevronRight, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Receipt, User, Phone, Package, Wallet, Check, ChevronRight, Loader2, ChevronsUpDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
+import { cn } from "@/lib/utils"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
 
 type Product = {
     id: string
@@ -32,21 +46,25 @@ export default function ReceiptForm() {
     const [isLoading, setIsLoading] = useState(false)
     const [products, setProducts] = useState<Product[]>([])
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+    const [existingCustomers, setExistingCustomers] = useState<{ name: string, phone: string }[]>([])
 
     // Receipt State
     const [customer, setCustomer] = useState({ name: '', phone: '' })
+    const [customerOpen, setCustomerOpen] = useState(false) // For Combobox
     const [selectedItems, setSelectedItems] = useState<{ id: string, name: string, price: number, quantity: number }[]>([])
     const [laborCost, setLaborCost] = useState(0)
     const [selectedPayments, setSelectedPayments] = useState<string[]>([])
 
     useEffect(() => {
         const fetchData = async () => {
-            const [pRes, pmRes] = await Promise.all([
+            const [pRes, pmRes, cRes] = await Promise.all([
                 fetch('/api/products'),
-                fetch('/api/payment-methods')
+                fetch('/api/payment-methods'),
+                fetch('/api/customers')
             ])
             if (pRes.ok) setProducts(await pRes.json())
             if (pmRes.ok) setPaymentMethods(await pmRes.json())
+            if (cRes.ok) setExistingCustomers(await cRes.json())
 
             // Load draft from session storage if exists
             const savedDraft = sessionStorage.getItem('receipt_draft')
@@ -131,12 +149,60 @@ export default function ReceiptForm() {
                     <CardContent className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label className="font-semibold text-muted-foreground">ชื่อ-นามสกุล</Label>
-                            <Input
-                                placeholder="สมชาย ใจดี"
-                                className="rounded-lg h-10 border-border"
-                                value={customer.name}
-                                onChange={e => setCustomer({ ...customer, name: e.target.value })}
-                            />
+                            <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={customerOpen}
+                                        className="w-full justify-between h-10 border-border text-left font-normal"
+                                    >
+                                        {customer.name ? customer.name : "พิมพ์หรือเลือกชื่อลูกค้า..."}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0" align="start">
+                                    <Command>
+                                        <CommandInput
+                                            placeholder="ค้นหาชื่อลูกค้า..."
+                                            onValueChange={(val) => {
+                                                if (val !== customer.name) {
+                                                    setCustomer(prev => ({ ...prev, name: val }))
+                                                }
+                                            }}
+                                        />
+                                        <CommandList>
+                                            <CommandEmpty className="py-2 px-4 text-sm text-muted-foreground">
+                                                พิมพ์ชื่อใหม่เพื่อสร้างลูกค้า
+                                            </CommandEmpty>
+                                            <CommandGroup heading="ลูกค้าเก่า">
+                                                {existingCustomers.map((c) => (
+                                                    <CommandItem
+                                                        key={c.name}
+                                                        value={c.name}
+                                                        onSelect={(currentValue) => {
+                                                            setCustomer({ name: currentValue, phone: c.phone })
+                                                            setCustomerOpen(false)
+                                                            toast.success('ดึงข้อมูลลูกค้าแล้ว')
+                                                        }}
+                                                    >
+                                                        <Check
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                customer.name === c.name ? "opacity-100" : "opacity-0"
+                                                            )}
+                                                        />
+                                                        <div className="flex flex-col">
+                                                            <span>{c.name}</span>
+                                                            {c.phone && <span className="text-xs text-muted-foreground">{c.phone}</span>}
+                                                        </div>
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
                         </div>
                         <div className="space-y-2">
                             <Label className="font-semibold text-muted-foreground">เบอร์โทรศัพท์</Label>
@@ -157,80 +223,197 @@ export default function ReceiptForm() {
                             <Package className="h-5 w-5 text-primary" /> รายการสินค้า
                         </CardTitle>
                         <Button variant="outline" size="sm" onClick={addItem} className="rounded-lg border-border font-semibold px-4">
-                            <Plus className="h-4 w-4 mr-1.5" /> Add Item
+                            <Plus className="h-4 w-4 mr-1.5" /> เพิ่มรายการ
                         </Button>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="border-border/40 hover:bg-transparent">
-                                    <TableHead className="w-[40%] font-semibold">สินค้า</TableHead>
-                                    <TableHead className="font-semibold">ราคา (฿)</TableHead>
-                                    <TableHead className="w-[100px] font-semibold">จำนวน</TableHead>
-                                    <TableHead className="text-right font-semibold">รวม</TableHead>
-                                    <TableHead className="w-[50px]"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {selectedItems.map((item, index) => (
-                                    <TableRow key={index} className="border-border/20">
-                                        <TableCell>
-                                            <div className="relative">
+                        <div className="hidden md:block">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="border-border/40 hover:bg-transparent">
+                                        <TableHead className="w-[40%] font-semibold">สินค้า</TableHead>
+                                        <TableHead className="font-semibold">ราคา (฿)</TableHead>
+                                        <TableHead className="w-[100px] font-semibold">จำนวน</TableHead>
+                                        <TableHead className="text-right font-semibold">รวม</TableHead>
+                                        <TableHead className="w-[50px]"></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {selectedItems.map((item, index) => (
+                                        <TableRow key={index} className="border-border/20">
+                                            <TableCell className="align-top pt-4">
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            role="combobox"
+                                                            className={cn(
+                                                                "w-full justify-between h-10 bg-background/50 border-border/40 font-normal",
+                                                                !item.name && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            {item.name || "เลือกสินค้า..."}
+                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-[300px] p-0" align="start">
+                                                        <Command>
+                                                            <CommandInput placeholder="ค้นหาสินค้า..." />
+                                                            <CommandList>
+                                                                <CommandEmpty>ไม่พบสินค้านี้</CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {products.map((product) => (
+                                                                        <CommandItem
+                                                                            key={product.id}
+                                                                            value={product.name}
+                                                                            onSelect={() => {
+                                                                                updateItem(index, 'id', product.id)
+                                                                            }}
+                                                                        >
+                                                                            <Check
+                                                                                className={cn(
+                                                                                    "mr-2 h-4 w-4",
+                                                                                    item.id === product.id ? "opacity-100" : "opacity-0"
+                                                                                )}
+                                                                            />
+                                                                            <div className="flex flex-col">
+                                                                                <span>{product.name}</span>
+                                                                                <span className="text-xs text-muted-foreground">฿{product.price} | คงเหลือ: {product.quantity}</span>
+                                                                            </div>
+                                                                        </CommandItem>
+                                                                    ))}
+                                                                </CommandGroup>
+                                                            </CommandList>
+                                                        </Command>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </TableCell>
+                                            <TableCell className="align-top pt-4">
                                                 <Input
-                                                    list={`products-${index}`}
-                                                    placeholder="ชื่อสินค้า (พิมพ์เองได้)"
+                                                    type="number"
                                                     className="rounded-lg h-10 border-border/40 bg-background/50"
-                                                    value={item.name}
-                                                    onChange={e => {
-                                                        const val = e.target.value
-                                                        const prod = products.find(p => p.name === val)
-                                                        if (prod) {
-                                                            updateItem(index, 'id', prod.id)
-                                                        } else {
-                                                            updateItem(index, 'name', val)
-                                                        }
-                                                    }}
+                                                    value={item.price || ''}
+                                                    onChange={e => updateItem(index, 'price', Number(e.target.value))}
                                                 />
-                                                <datalist id={`products-${index}`}>
-                                                    {products.map(p => (
-                                                        <option key={p.id} value={p.name}>{p.name} (฿{p.price})</option>
-                                                    ))}
-                                                </datalist>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
+                                            </TableCell>
+                                            <TableCell className="align-top pt-4">
+                                                <Input
+                                                    type="number"
+                                                    className="rounded-lg h-10 border-border/40 bg-background/50"
+                                                    value={item.quantity || ''}
+                                                    onChange={e => updateItem(index, 'quantity', Number(e.target.value))}
+                                                />
+                                            </TableCell>
+                                            <TableCell className="text-right font-bold align-top pt-6">
+                                                ฿{(item.price * item.quantity).toLocaleString()}
+                                            </TableCell>
+                                            <TableCell className="align-top pt-4">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-9 w-9 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                                                    onClick={() => setSelectedItems(selectedItems.filter((_, i) => i !== index))}
+                                                >
+                                                    <Trash2 className="h-4.5 w-4.5" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                        {/* Mobile View */}
+                        <div className="md:hidden space-y-4">
+                            {selectedItems.map((item, index) => (
+                                <div key={index} className="p-4 rounded-xl border border-border/40 bg-background/50 space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs text-muted-foreground">สินค้า</Label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className={cn(
+                                                        "w-full justify-between h-10 bg-background/50 border-border/40 font-normal",
+                                                        !item.name && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {item.name || "เลือกสินค้า..."}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[300px] p-0" align="start">
+                                                <Command>
+                                                    <CommandInput placeholder="ค้นหาสินค้า..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>ไม่พบสินค้านี้</CommandEmpty>
+                                                        <CommandGroup>
+                                                            {products.map((product) => (
+                                                                <CommandItem
+                                                                    key={product.id}
+                                                                    value={product.name}
+                                                                    onSelect={() => {
+                                                                        updateItem(index, 'id', product.id)
+                                                                    }}
+                                                                >
+                                                                    <Check
+                                                                        className={cn(
+                                                                            "mr-2 h-4 w-4",
+                                                                            item.id === product.id ? "opacity-100" : "opacity-0"
+                                                                        )}
+                                                                    />
+                                                                    <div className="flex flex-col">
+                                                                        <span>{product.name}</span>
+                                                                        <span className="text-xs text-muted-foreground">฿{product.price} | คงเหลือ: {product.quantity}</span>
+                                                                    </div>
+                                                                </CommandItem>
+                                                            ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-muted-foreground">ราคา (฿)</Label>
                                             <Input
                                                 type="number"
                                                 className="rounded-lg h-10 border-border/40 bg-background/50"
                                                 value={item.price || ''}
                                                 onChange={e => updateItem(index, 'price', Number(e.target.value))}
                                             />
-                                        </TableCell>
-                                        <TableCell>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-muted-foreground">จำนวน</Label>
                                             <Input
                                                 type="number"
-                                                className="rounded-lg h-10 border-border/40 bg-background/50"
+                                                className="rounded-lg h-10 border-border/40 bg-background/50 text-center"
                                                 value={item.quantity || ''}
                                                 onChange={e => updateItem(index, 'quantity', Number(e.target.value))}
                                             />
-                                        </TableCell>
-                                        <TableCell className="text-right font-bold">
-                                            ฿{(item.price * item.quantity).toLocaleString()}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-9 w-9 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                                                onClick={() => setSelectedItems(selectedItems.filter((_, i) => i !== index))}
-                                            >
-                                                <Trash2 className="h-4.5 w-4.5" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-2 border-t border-border/20">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-medium text-muted-foreground">รวม:</span>
+                                            <span className="text-lg font-bold text-primary">฿{(item.price * item.quantity).toLocaleString()}</span>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-destructive hover:bg-destructive/10 -mr-2"
+                                            onClick={() => setSelectedItems(selectedItems.filter((_, i) => i !== index))}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-1" /> ลบ
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -301,16 +484,19 @@ export default function ReceiptForm() {
                                         else setSelectedPayments(selectedPayments.filter(id => id !== pm.id))
                                     }}
                                 />
-                                <Label htmlFor={pm.id} className="flex-1 cursor-pointer">
+                                <Label htmlFor={pm.id} className="flex-1 cursor-pointer w-full">
                                     {pm.type === 'promptpay' ? (
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-center w-full gap-4">
                                             <span className="font-black text-lg">PromptPay</span>
-                                            <span className="text-muted-foreground font-medium tracking-wide">{pm.promptpay_number}</span>
+                                            <span className="text-muted-foreground font-medium tracking-wide text-right">{pm.promptpay_number}</span>
                                         </div>
                                     ) : (
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-center w-full gap-4">
                                             <span className="font-black text-lg">{pm.bank_name}</span>
-                                            <span className="text-muted-foreground font-medium tracking-wide">{pm.account_number} ({pm.account_name})</span>
+                                            <div className="text-right">
+                                                <span className="text-muted-foreground font-medium tracking-wide block">{pm.account_number}</span>
+                                                <span className="text-muted-foreground/60 text-xs font-normal block">({pm.account_name})</span>
+                                            </div>
                                         </div>
                                     )}
                                 </Label>
@@ -324,7 +510,7 @@ export default function ReceiptForm() {
                             disabled={isLoading}
                         >
                             {isLoading ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : <ChevronRight className="mr-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />}
-                            Preview Receipt
+                            ดูตัวอย่างใบเสร็จ
                         </Button>
                     </CardFooter>
                 </Card>

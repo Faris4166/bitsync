@@ -2,25 +2,22 @@
 
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-    Download,
-    Printer,
-    ArrowLeft,
-    Edit,
-    Smartphone,
-    Landmark,
     CheckCircle2,
     Loader2,
-    Save
+    ArrowLeft,
+    Printer,
+    Smartphone,
+    Landmark
 } from 'lucide-react'
-import { QRCodeSVG } from 'qrcode.react'
+import { QRCodeCanvas } from 'qrcode.react'
 import generatePayload from 'promptpay-qr'
-import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
-import { toast } from 'sonner'
 import Link from 'next/link'
+import { useReactToPrint } from 'react-to-print'
+import { toast } from 'sonner'
+
 
 type Receipt = {
     id: string
@@ -52,16 +49,18 @@ type PaymentMethod = {
     account_name?: string
 }
 
+const ITEMS_PER_PAGE = 15
+
+
 export default function ReceiptDetail() {
     const { id } = useParams()
     const router = useRouter()
-    const receiptRef = useRef<HTMLDivElement>(null)
+    const containerRef = useRef<HTMLDivElement>(null)
 
     const [receipt, setReceipt] = useState<Receipt | null>(null)
     const [profile, setProfile] = useState<Profile | null>(null)
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
     const [isLoading, setIsLoading] = useState(true)
-    const [isSaving, setIsSaving] = useState(false)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -83,35 +82,24 @@ export default function ReceiptDetail() {
         fetchData()
     }, [id])
 
-    const exportPDF = React.useCallback(async () => {
-        if (!receiptRef.current) return
-        setIsSaving(true)
-        try {
-            const canvas = await html2canvas(receiptRef.current, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            })
-            const imgData = canvas.toDataURL('image/png')
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            })
+    const selectedPaymentMethods = React.useMemo(() => paymentMethods.filter(pm =>
+        receipt?.payment_info?.selected_ids?.includes(pm.id)
+    ), [paymentMethods, receipt?.payment_info?.selected_ids])
 
-            const pdfWidth = pdf.internal.pageSize.getWidth()
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-            pdf.save(`receipt-${receipt?.receipt_number}.pdf`)
-            toast.success('ดาวน์โหลด PDF สำเร็จ')
-        } catch (err) {
-            toast.error('เกิดข้อผิดพลาดในการสร้าง PDF')
-        } finally {
-            setIsSaving(false)
+    // Chunk items for pagination
+    const itemChunks = React.useMemo(() => {
+        if (!receipt?.items) return []
+        const chunks = []
+        for (let i = 0; i < receipt.items.length; i += ITEMS_PER_PAGE) {
+            chunks.push(receipt.items.slice(i, i + ITEMS_PER_PAGE))
         }
-    }, [receipt?.receipt_number])
+        return chunks
+    }, [receipt?.items])
+
+    const handlePrint = useReactToPrint({
+        contentRef: containerRef,
+        documentTitle: `receipt-${receipt?.receipt_number || 'draft'}`,
+    })
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -122,204 +110,230 @@ export default function ReceiptDetail() {
 
     if (!receipt) return <div>ไม่พบข้อมูลใบเสร็จ</div>
 
-    const selectedPaymentMethods = React.useMemo(() => paymentMethods.filter(pm =>
-        receipt?.payment_info?.selected_ids?.includes(pm.id)
-    ), [paymentMethods, receipt?.payment_info?.selected_ids])
-
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            {/* --- PAGE HEADER --- */}
+            {/* --- PAGE HEADER (Hidden on Print) --- */}
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-                <div className="space-y-1">
+                <div className="space-y-1 no-print">
                     <div className="flex items-center gap-2 mb-2">
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-md" asChild>
                             <Link href="/auth/history">
                                 <ArrowLeft className="h-4 w-4" />
                             </Link>
                         </Button>
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-2 py-0.5 rounded border border-border">Receipt Details</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-2 py-0.5 rounded border border-border">รายละเอียดใบเสร็จ</span>
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight">{receipt.receipt_number}</h1>
-                    <p className="text-sm font-medium text-muted-foreground">Issued on {new Date(receipt.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                    <p className="text-sm font-medium text-muted-foreground">ออกเมื่อ {new Date(receipt.created_at).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                 </div>
 
                 <div className="flex items-center gap-2 no-print">
-                    <Button variant="outline" size="sm" className="rounded-md font-semibold" onClick={() => window.print()}>
-                        <Printer className="h-4 w-4 mr-2" /> Print
-                    </Button>
-                    <Button size="sm" className="rounded-md font-semibold shadow-sm" onClick={exportPDF} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                        Download PDF
+                    <Button variant="outline" size="sm" className="rounded-md font-semibold" onClick={() => handlePrint && handlePrint()}>
+                        <Printer className="h-4 w-4 mr-2" /> พิมพ์ / PDF
                     </Button>
                 </div>
             </div>
 
-            {/* --- RECEIPT A4 AREA --- */}
-            <Card className="rounded-xl border border-border shadow-xl bg-card mx-auto overflow-hidden w-fit no-print-shadow">
-                <div
-                    ref={receiptRef}
-                    className="w-[210mm] min-h-[297mm] p-[15mm] text-slate-800 bg-white shadow-inner mx-auto relative printable-content"
-                    style={{ fontStyle: 'normal' }}
-                >
-                    {/* Header */}
-                    <div className="flex justify-between items-start border-b border-slate-200 pb-10 mb-10">
-                        <div>
-                            {profile?.shop_logo_url && (
-                                <img src={profile.shop_logo_url} alt="Logo" className="h-12 mb-6 object-contain" />
-                            )}
-                            <h1 className="text-3xl font-bold tracking-tight text-slate-900">{profile?.shop_name || 'BITSYNC SHOP'}</h1>
-                            <p className="text-[12px] text-slate-500 max-w-xs mt-3 leading-relaxed whitespace-pre-wrap">
-                                {profile?.address || 'Address not specified'}
-                                <br />
-                                Tel: {profile?.phone || '-'}
-                            </p>
-                        </div>
-                        <div className="text-right">
-                            <div className="mb-6">
-                                <h2 className="text-2xl font-bold tracking-tight text-slate-900">RECEIPT</h2>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Official Document</p>
-                            </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Receipt Number</p>
-                                    <p className="text-lg font-mono font-bold text-slate-900">{receipt.receipt_number}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Date of Issue</p>
-                                    <p className="text-md font-bold text-slate-900">{new Date(receipt.created_at).toLocaleDateString('en-US', {
-                                        year: 'numeric', month: 'long', day: 'numeric'
-                                    })}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-12 mb-12">
-                        <div>
-                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">Customer Details</h3>
-                            <div className="space-y-1">
-                                <p className="text-lg font-bold text-slate-900">{receipt.customer_name}</p>
-                                <p className="text-sm text-slate-500 font-medium">{receipt.customer_phone}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Table */}
-                    <table className="w-full mb-12">
-                        <thead>
-                            <tr className="bg-slate-50 border-y border-slate-200">
-                                <th className="p-4 text-left font-bold uppercase tracking-widest text-[9px] text-slate-500">Description</th>
-                                <th className="p-4 text-center font-bold uppercase tracking-widest text-[9px] text-slate-500">Qty</th>
-                                <th className="p-4 text-right font-bold uppercase tracking-widest text-[9px] text-slate-500">Unit Price</th>
-                                <th className="p-4 text-right font-bold uppercase tracking-widest text-[9px] text-slate-500">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {receipt.items.map((item, i) => (
-                                <tr key={i}>
-                                    <td className="p-4">
-                                        <p className="font-semibold text-slate-900">{item.name}</p>
-                                    </td>
-                                    <td className="p-4 text-center text-slate-600 font-medium">{item.quantity}</td>
-                                    <td className="p-4 text-right text-slate-600 font-medium">฿{item.price.toLocaleString()}</td>
-                                    <td className="p-4 text-right font-bold text-slate-900">฿{(item.price * item.quantity).toLocaleString()}</td>
-                                </tr>
-                            ))}
-                            {receipt.labor_cost > 0 && (
-                                <tr className="bg-slate-50/50">
-                                    <td className="p-4 italic text-slate-500">ค่าแรง / ค่าบริการ</td>
-                                    <td className="p-4 text-center">-</td>
-                                    <td className="p-4 text-right">-</td>
-                                    <td className="p-4 text-right font-bold text-slate-900">฿{receipt.labor_cost.toLocaleString()}</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-
-                    {/* Summary Section */}
-                    <div className="flex justify-between gap-12">
-                        {/* Payment Info & QR */}
-                        <div className="flex-1">
-                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-4">Payment Methods</h3>
-                            <div className="space-y-4">
-                                {selectedPaymentMethods.map(pm => (
-                                    <div key={pm.id} className="flex items-start gap-4">
-                                        <div className="p-2 bg-slate-50 rounded-lg">
-                                            {pm.type === 'promptpay' ? <Smartphone className="h-5 w-5 text-slate-900" /> : <Landmark className="h-5 w-5 text-slate-900" />}
+            {/* --- RECEIPT CONTAINER PREVIEW BOX --- */}
+            {/* Added overflow-auto to handle horizontal scroll on small screens */}
+            <div className="w-full overflow-auto bg-slate-100/50 p-4 md:p-8 rounded-xl print:p-0 print:bg-white print:overflow-visible">
+                <div ref={containerRef} className="w-fit mx-auto print:mx-0 print:w-full">
+                    {itemChunks.map((chunk, pageIndex) => {
+                        const isLastPage = pageIndex === itemChunks.length - 1
+                        return (
+                            <div
+                                key={pageIndex}
+                                className={`receipt-page bg-white shadow-lg mx-auto relative flex flex-col p-[15mm] mb-8 print:mb-0 print:shadow-none print:break-after-page`}
+                                style={{
+                                    width: '210mm',
+                                    minHeight: '296mm',
+                                    fontStyle: 'normal'
+                                }}
+                            >
+                                {/* Header (Repeated on every page) */}
+                                <div className="flex justify-between items-start border-b border-slate-200 pb-4 mb-4">
+                                    <div className="flex-1 pr-4">
+                                        {profile?.shop_logo_url && (
+                                            <img src={profile.shop_logo_url} alt="Logo" className="h-12 mb-3 object-contain" />
+                                        )}
+                                        <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-tight">{profile?.shop_name || 'BITSYNC SHOP'}</h1>
+                                        <p className="text-xs text-slate-500 max-w-xs mt-1.5 leading-relaxed whitespace-pre-wrap font-medium">
+                                            {profile?.address || 'ไม่ระบุที่อยู่'}
+                                            <br />
+                                            โทร: {profile?.phone || '-'}
+                                        </p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <div className="mb-3 inline-block text-right">
+                                            <h2 className="text-xl font-bold tracking-tight text-slate-900 uppercase">ใบเสร็จรับเงิน</h2>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">RECEIPT</p>
+                                            <p className="text-[10px] text-slate-400 mt-1">
+                                                หน้า {pageIndex + 1} / {itemChunks.length}
+                                            </p>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-900">
-                                                {pm.type === 'promptpay' ? 'PrompPay' : pm.bank_name}
-                                            </p>
-                                            <p className="text-md font-mono font-bold text-slate-700">
-                                                {pm.type === 'promptpay' ? pm.promptpay_number : pm.account_number}
-                                            </p>
-                                            <p className="text-xs text-slate-400">{pm.account_name}</p>
-
-                                            {pm.type === 'promptpay' && pm.promptpay_number && (
-                                                <div className="mt-3 p-3 bg-white border border-slate-100 rounded-xl inline-block shadow-sm">
-                                                    <QRCodeSVG
-                                                        value={generatePayload(pm.promptpay_number, { amount: receipt.total_amount })}
-                                                        size={90}
-                                                        level="M"
-                                                    />
-                                                    <p className="text-[8px] text-center mt-1.5 font-bold text-slate-400 uppercase tracking-widest">Scan to Pay</p>
-                                                </div>
-                                            )}
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-end gap-3">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">เลขที่</p>
+                                                <p className="text-sm font-mono font-bold text-slate-900">{receipt.receipt_number}</p>
+                                            </div>
+                                            <div className="flex items-center justify-end gap-3">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">วันที่</p>
+                                                <p className="text-sm font-bold text-slate-900">{new Date(receipt.created_at).toLocaleDateString('th-TH', {
+                                                    year: 'numeric', month: 'long', day: 'numeric'
+                                                })}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Grand Total */}
-                        <div className="w-[35%]">
-                            <div className="space-y-3 bg-slate-50 p-6 rounded-xl border border-slate-100">
-                                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    <span>Subtotal</span>
-                                    <span className="text-slate-900">฿{receipt.subtotal.toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    <span>Labor / Service</span>
-                                    <span className="text-slate-900">฿{receipt.labor_cost.toLocaleString()}</span>
-                                </div>
-                                <div className="h-px bg-slate-200 my-2" />
-                                <div className="flex justify-between items-center pt-1">
-                                    <span className="text-[11px] font-bold uppercase text-slate-900 tracking-widest">Net Total</span>
-                                    <span className="text-2xl font-bold text-slate-900">฿{receipt.total_amount.toLocaleString()}</span>
-                                </div>
-                            </div>
 
-                            {/* Signatures */}
-                            <div className="mt-16 pt-6 border-t border-slate-200 text-center">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Authorized Signature</p>
-                                <div className="mt-10 h-px bg-slate-400 w-full mx-auto" />
-                                <p className="mt-2 text-[12px] font-semibold text-slate-900">{profile?.full_name || 'Authorized Personnel'}</p>
-                            </div>
-                        </div>
-                    </div>
+                                {/* Customer Section (Repeated on every page) */}
+                                <div className="mb-4">
+                                    <div className="p-3 bg-slate-100 rounded-lg border border-slate-100">
+                                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ข้อมูลลูกค้า</h3>
+                                        <div className="text-sm font-medium text-slate-900 flex justify-between items-center">
+                                            <span className="font-bold">{receipt.customer_name}</span>
+                                            <span className="text-slate-500">{receipt.customer_phone}</span>
+                                        </div>
+                                    </div>
+                                </div>
 
-                    {/* Watermark/Decoration */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rotate-45 pointer-events-none opacity-[0.03]">
-                        <CheckCircle2 className="w-[400px] h-[400px]" />
-                    </div>
+                                {/* Table */}
+                                <div className="flex-1">
+                                    <table className="w-full mb-4">
+                                        <thead>
+                                            <tr className="border-y border-slate-200 bg-slate-100">
+                                                <th className="py-2 text-left font-bold text-[10px] text-slate-500 uppercase tracking-wider pl-4">รายการ</th>
+                                                <th className="py-2 text-center font-bold text-[10px] text-slate-500 uppercase tracking-wider w-16">จำนวน</th>
+                                                <th className="py-2 text-right font-bold text-[10px] text-slate-500 uppercase tracking-wider w-24">ราคา</th>
+                                                <th className="py-2 text-right font-bold text-[10px] text-slate-500 uppercase tracking-wider w-24 pr-4">รวม</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {chunk.map((item: any, i: number) => (
+                                                <tr key={i}>
+                                                    <td className="py-2 pl-4">
+                                                        <p className="font-medium text-slate-900 text-xs">{item.name}</p>
+                                                    </td>
+                                                    <td className="py-2 text-center text-slate-600 font-medium text-xs">{item.quantity}</td>
+                                                    <td className="py-2 text-right text-slate-600 font-medium text-xs">฿{item.price.toLocaleString()}</td>
+                                                    <td className="py-2 pr-4 text-right font-bold text-slate-900 text-xs">฿{(item.price * item.quantity).toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Footer / Summary (ONLY ON LAST PAGE) */}
+                                {isLastPage ? (
+                                    <div className="grid grid-cols-12 gap-8 mt-auto pt-6 border-t border-slate-200">
+                                        {/* Left: Payment */}
+                                        <div className="col-span-12 md:col-span-7 space-y-4">
+                                            <div>
+                                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">ชำระเงินโดย</h3>
+                                                <div className="space-y-3">
+                                                    {selectedPaymentMethods.map(pm => (
+                                                        <div key={pm.id} className="flex items-start gap-3">
+                                                            <div className="p-1.5 bg-slate-100 rounded-lg shrink-0 border border-slate-100">
+                                                                {pm.type === 'promptpay' ? <Smartphone className="h-4 w-4 text-slate-900" /> : <Landmark className="h-4 w-4 text-slate-900" />}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-xs font-bold text-slate-900 truncate">
+                                                                    {pm.type === 'promptpay' ? 'พร้อมเพย์' : pm.bank_name}
+                                                                </p>
+                                                                <p className="text-[10px] font-mono text-slate-600 truncate">
+                                                                    {pm.type === 'promptpay' ? pm.promptpay_number : pm.account_number}
+                                                                </p>
+
+                                                                {pm.type === 'promptpay' && pm.promptpay_number && (
+                                                                    <div className="mt-2 shrink-0">
+                                                                        <QRCodeCanvas
+                                                                            value={generatePayload(pm.promptpay_number, { amount: receipt.total_amount })}
+                                                                            size={60}
+                                                                            level="L"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Right: Totals */}
+                                        <div className="col-span-12 md:col-span-5">
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-slate-500 font-medium">รวมเป็นเงิน</span>
+                                                    <span className="font-bold text-slate-900">฿{receipt.subtotal.toLocaleString()}</span>
+                                                </div>
+                                                {receipt.labor_cost > 0 && (
+                                                    <div className="flex justify-between items-center text-xs">
+                                                        <span className="text-slate-500 font-medium">ค่าบริการ</span>
+                                                        <span className="font-bold text-slate-900">฿{receipt.labor_cost.toLocaleString()}</span>
+                                                    </div>
+                                                )}
+                                                <div className="h-px bg-slate-200 my-2" />
+                                                <div className="flex justify-between items-center text-lg">
+                                                    <span className="font-bold text-slate-900">ยอดสุทธิ</span>
+                                                    <span className="font-bold text-slate-900">฿{receipt.total_amount.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-8 text-center">
+                                                <div className="border-t border-slate-300 w-3/4 mx-auto mb-2" />
+                                                <p className="text-[10px] text-slate-400 uppercase tracking-wider">ผู้รับเงิน / Collector</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null}
+
+                            </div>
+                        )
+                    })}
                 </div>
-            </Card>
 
-            <style jsx global>{`
-                @media print {
-                    .no-print, nav, aside, button, .action-bar, header { display: none !important; }
-                    body { background: white !important; padding: 0 !important; margin: 0 !important; }
-                    main { padding: 0 !important; margin: 0 !important; }
-                    .no-print-shadow { box-shadow: none !important; border: none !important; }
-                    .printable-content { 
-                        box-shadow: none !important; 
-                        margin: 0 !important; 
-                        padding: 10mm !important;
-                        -webkit-print-color-adjust: exact;
+                <style jsx global>{`
+                    @media print {
+                        @page { margin: 0; size: A4 portrait; }
+                        * {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        body, main { 
+                            background: white !important; 
+                            margin: 0 !important; 
+                            padding: 0 !important; 
+                            width: 100% !important; 
+                            max-width: none !important;
+                        }
+                        /* Hide Layout UI */
+                        aside, header, nav, .sidebar { display: none !important; }
+                        /* Restore Receipt Visibility */
+                        .no-print { display: none !important; }
+                        .print\\:shadow-none { box-shadow: none !important; border: none !important; }
+                        .print\\:break-after-page { break-after: page; }
+                        .print\\:mx-0 { margin-left: 0 !important; margin-right: 0 !important; }
+                        
+                        /* Ensure exact A4 sizing on print - STRICT */
+                        .receipt-page {
+                             width: 210mm !important;
+                             height: 296mm !important;
+                             position: relative !important;
+                             margin: 0 !important;
+                             padding: 15mm !important;
+                             overflow: hidden !important;
+                             page-break-after: always;
+                             left: 0 !important;
+                             top: 0 !important;
+                        }
+                        /* Prevent blank page after the last page */
+                        .receipt-page:last-child {
+                            page-break-after: auto !important;
+                        }
                     }
-                }
-            `}</style>
+                `}</style>
+            </div>
         </div>
     )
 }

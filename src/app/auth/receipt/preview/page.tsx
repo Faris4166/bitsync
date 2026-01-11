@@ -2,26 +2,23 @@
 
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-    Download,
     Printer,
-    ArrowLeft,
     Edit,
     Smartphone,
     Landmark,
-    CheckCircle2,
     Loader2,
     Save,
-    Check
+    ArrowLeft
 } from 'lucide-react'
-import { QRCodeSVG } from 'qrcode.react'
+import { QRCodeCanvas } from 'qrcode.react'
 import generatePayload from 'promptpay-qr'
-import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
 import { toast } from 'sonner'
-import Link from 'next/link'
+import { useReactToPrint } from 'react-to-print'
+
+const ITEMS_PER_PAGE = 15
 
 type ReceiptDraft = {
     customer_name: string
@@ -60,6 +57,14 @@ export default function ReceiptPreview() {
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
 
+    // Generate a unique preview ID for this session to ensure QR code uniqueness
+    const [previewId] = useState(() => {
+        const now = new Date()
+        const timestamp = now.toLocaleTimeString('th-TH', { hour12: false }).replace(/:/g, '')
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+        return `DRAFT-${timestamp}-${random}`
+    })
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -87,7 +92,7 @@ export default function ReceiptPreview() {
         fetchData()
     }, [router])
 
-    const handleSaveAndDownload = React.useCallback(async () => {
+    const handleSave = React.useCallback(async () => {
         if (!draft) return
         setIsSaving(true)
 
@@ -102,29 +107,9 @@ export default function ReceiptPreview() {
             if (!res.ok) throw new Error('Failed to save receipt')
             const savedReceipt = await res.json()
 
-            // 2. Generate PDF using current ref
-            if (receiptRef.current) {
-                const canvas = await html2canvas(receiptRef.current, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#ffffff'
-                })
-                const imgData = canvas.toDataURL('image/png')
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4'
-                })
-                const pdfWidth = pdf.internal.pageSize.getWidth()
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-                pdf.save(`receipt-${savedReceipt.receipt_number}.pdf`)
-            }
-
-            // 3. Cleanup and Redirect
+            // 2. Redirect
             sessionStorage.removeItem('receipt_draft')
-            toast.success('บันทึกข้อมูลและสร้างใบเสร็จสำเร็จ')
+            toast.success('บันทึกข้อมูลสำเร็จ')
             router.push(`/auth/receipt/${savedReceipt.id}`)
         } catch (err) {
             toast.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล')
@@ -132,6 +117,25 @@ export default function ReceiptPreview() {
             setIsSaving(false)
         }
     }, [draft, router])
+
+    const selectedPaymentMethods = React.useMemo(() => paymentMethods.filter(pm =>
+        draft?.payment_info?.selected_ids?.includes(pm.id)
+    ), [paymentMethods, draft?.payment_info?.selected_ids])
+
+    // Chunk items for pagination
+    const itemChunks = React.useMemo(() => {
+        if (!draft?.items) return []
+        const chunks = []
+        for (let i = 0; i < draft.items.length; i += ITEMS_PER_PAGE) {
+            chunks.push(draft.items.slice(i, i + ITEMS_PER_PAGE))
+        }
+        return chunks
+    }, [draft?.items])
+
+    const handlePrint = useReactToPrint({
+        contentRef: receiptRef,
+        documentTitle: `receipt-${previewId}`,
+    })
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -142,196 +146,230 @@ export default function ReceiptPreview() {
 
     if (!draft) return null
 
-    const selectedPaymentMethods = React.useMemo(() => paymentMethods.filter(pm =>
-        draft?.payment_info?.selected_ids?.includes(pm.id)
-    ), [paymentMethods, draft?.payment_info?.selected_ids])
-
     return (
-        <div className="max-w-5xl mx-auto space-y-6 pb-20 px-4">
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3 text-amber-800">
-                <div className="p-2 bg-amber-100 rounded-full">
-                    <Edit className="h-5 w-5" />
-                </div>
-                <div>
-                    <p className="font-bold">โหมดตัวอย่าง (ยังไม่ได้บันทึก)</p>
-                    <p className="text-sm">ตรวจสอบความถูกต้องก่อนกดบันทึกข้อมูลลงระบบ</p>
-                </div>
-            </div>
-
+        <div className="space-y-8 animate-in fade-in duration-500 pb-20">
             {/* --- ACTION BAR --- */}
-            <div className="flex flex-wrap items-center justify-between gap-4 bg-background/80 backdrop-blur-md p-4 rounded-2xl sticky top-4 z-10 border shadow-sm">
-                <div className="flex gap-2">
-                    <Button variant="ghost" className="rounded-full" onClick={() => router.back()}>
-                        <Edit className="h-4 w-4 mr-2" /> กลับไปแก้ไข
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-background/80 backdrop-blur-md p-4 rounded-2xl sticky top-4 z-50 border shadow-sm transition-all duration-300 no-print">
+                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                    <Button variant="ghost" className="rounded-full shrink-0" onClick={() => router.back()}>
+                        <ArrowLeft className="h-4 w-4 mr-2" /> กลับไปแก้ไข
                     </Button>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-900 rounded-full border border-amber-200">
+                        <Edit className="h-4 w-4" />
+                        <span className="text-xs font-bold">โหมดตัวอย่าง (Preview)</span>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="rounded-full" onClick={() => window.print()}>
-                        <Printer className="h-4 w-4 mr-2" /> พิมพ์
+                <div className="flex gap-2 w-full md:w-auto justify-end">
+                    <Button variant="outline" className="rounded-full shrink-0" onClick={() => handlePrint && handlePrint()}>
+                        <Printer className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">พิมพ์ตัวอย่าง / PDF</span>
                     </Button>
-                    <Button className="rounded-full shadow-lg bg-green-600 hover:bg-green-700 text-white border-none" onClick={handleSaveAndDownload} disabled={isSaving}>
+                    <Button className="rounded-full shadow-lg bg-green-600 hover:bg-green-700 text-white border-none shrink-0" onClick={handleSave} disabled={isSaving}>
                         {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                        บันทึกลงระบบ และดาวน์โหลด PDF
+                        บันทึกข้อมูล
                     </Button>
                 </div>
             </div>
 
-            {/* --- RECEIPT A4 AREA --- */}
-            <Card className="rounded-none border-none shadow-2xl bg-white mx-auto overflow-hidden">
-                <div
-                    ref={receiptRef}
-                    className="w-[210mm] min-h-[297mm] p-[15mm] text-slate-800 bg-white shadow-inner mx-auto relative printable-content"
-                    style={{ fontStyle: 'normal' }}
-                >
-                    {/* Header */}
-                    <div className="flex justify-between items-start border-b-2 border-slate-900 pb-8 mb-8">
-                        <div>
-                            {profile?.shop_logo_url && (
-                                <img src={profile.shop_logo_url} alt="Logo" className="h-16 mb-4 object-contain" />
-                            )}
-                            <h1 className="text-4xl font-black uppercase tracking-tighter text-slate-900">{profile?.shop_name || 'BITSYNC SHOP'}</h1>
-                            <p className="text-sm text-slate-500 max-w-xs mt-2 leading-relaxed whitespace-pre-wrap">
-                                {profile?.address || 'ไม่ระบุที่อยู่'}
-                                <br />
-                                โทร: {profile?.phone || '-'}
-                            </p>
-                        </div>
-                        <div className="text-right">
-                            <div className="bg-slate-900 text-white px-6 py-2 rounded-lg mb-4 inline-block">
-                                <h2 className="text-xl font-bold uppercase tracking-widest">ใบเสร็จรับเงิน (ตัวอย่าง)</h2>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">เลขที่ใบเสร็จ</p>
-                                <p className="text-xl font-mono font-bold text-slate-900">PREVIEW-FILE</p>
-                            </div>
-                            <div className="mt-4">
-                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">วันที่</p>
-                                <p className="text-lg font-bold text-slate-900">{new Date().toLocaleDateString('th-TH', {
-                                    year: 'numeric', month: 'long', day: 'numeric'
-                                })}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-12 mb-12">
-                        <div>
-                            <h3 className="text-sm font-black text-slate-900 border-b border-slate-200 pb-2 mb-4 uppercase tracking-widest">ข้อมูลลูกค้า</h3>
-                            <div className="space-y-1">
-                                <p className="text-xl font-bold text-slate-900">{draft.customer_name}</p>
-                                <p className="text-md text-slate-500">{draft.customer_phone}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Table */}
-                    <table className="w-full mb-12">
-                        <thead>
-                            <tr className="bg-slate-900 text-white">
-                                <th className="p-4 text-left rounded-tl-lg font-bold uppercase tracking-widest text-xs">รายการสินค้า</th>
-                                <th className="p-4 text-center font-bold uppercase tracking-widest text-xs">จำนวน</th>
-                                <th className="p-4 text-right font-bold uppercase tracking-widest text-xs">ราคา/หน่วย</th>
-                                <th className="p-4 text-right rounded-tr-lg font-bold uppercase tracking-widest text-xs">รวม</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 border-x border-b border-slate-100">
-                            {draft.items.map((item, i) => (
-                                <tr key={i}>
-                                    <td className="p-4">
-                                        <p className="font-bold text-slate-900">{item.name}</p>
-                                    </td>
-                                    <td className="p-4 text-center text-slate-600">{item.quantity}</td>
-                                    <td className="p-4 text-right text-slate-600">฿{item.price.toLocaleString()}</td>
-                                    <td className="p-4 text-right font-bold text-slate-900">฿{(item.price * item.quantity).toLocaleString()}</td>
-                                </tr>
-                            ))}
-                            {draft.labor_cost > 0 && (
-                                <tr className="bg-slate-50/50">
-                                    <td className="p-4 italic text-slate-500">ค่าแรง / ค่าบริการ</td>
-                                    <td className="p-4 text-center">-</td>
-                                    <td className="p-4 text-right">-</td>
-                                    <td className="p-4 text-right font-bold text-slate-900">฿{draft.labor_cost.toLocaleString()}</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-
-                    {/* Summary Section */}
-                    <div className="flex justify-between gap-12">
-                        {/* Payment Info & QR */}
-                        <div className="flex-1">
-                            <h3 className="text-sm font-black text-slate-900 border-b border-slate-200 pb-2 mb-4 uppercase tracking-widest">ช่องทางการชำระเงิน</h3>
-                            <div className="space-y-4">
-                                {selectedPaymentMethods.map(pm => (
-                                    <div key={pm.id} className="flex items-start gap-4">
-                                        <div className="p-2 bg-slate-50 rounded-lg">
-                                            {pm.type === 'promptpay' ? <Smartphone className="h-5 w-5 text-slate-900" /> : <Landmark className="h-5 w-5 text-slate-900" />}
+            {/* --- RECEIPT CONTAINER PREVIEW BOX --- */}
+            <div className="w-full overflow-auto bg-slate-100/50 p-4 md:p-8 rounded-xl print:p-0 print:bg-white print:overflow-visible">
+                <div ref={receiptRef} className="w-fit mx-auto print:mx-0 print:w-full">
+                    {itemChunks.map((chunk, pageIndex) => {
+                        const isLastPage = pageIndex === itemChunks.length - 1
+                        return (
+                            <div
+                                key={pageIndex}
+                                className={`receipt-page bg-white shadow-lg mx-auto relative flex flex-col p-[15mm] mb-8 print:mb-0 print:shadow-none print:break-after-page`}
+                                style={{
+                                    width: '210mm',
+                                    minHeight: '296mm',
+                                    fontStyle: 'normal'
+                                }}
+                            >
+                                {/* Header (Repeated on every page) */}
+                                <div className="flex justify-between items-start border-b border-slate-200 pb-4 mb-4">
+                                    <div className="flex-1 pr-4">
+                                        {profile?.shop_logo_url && (
+                                            <img src={profile.shop_logo_url} alt="Logo" className="h-12 mb-3 object-contain" />
+                                        )}
+                                        <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-tight">{profile?.shop_name || 'BITSYNC SHOP'}</h1>
+                                        <p className="text-xs text-slate-500 max-w-xs mt-1.5 leading-relaxed whitespace-pre-wrap font-medium">
+                                            {profile?.address || 'ไม่ระบุที่อยู่'}
+                                            <br />
+                                            โทร: {profile?.phone || '-'}
+                                        </p>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <div className="mb-3 inline-block text-right">
+                                            <h2 className="text-xl font-bold tracking-tight text-slate-900 uppercase">ใบเสร็จรับเงิน</h2>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">RECEIPT</p>
+                                            <p className="text-[10px] text-slate-400 mt-1">
+                                                หน้า {pageIndex + 1} / {itemChunks.length}
+                                            </p>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-slate-900">
-                                                {pm.type === 'promptpay' ? 'PrompPay' : pm.bank_name}
-                                            </p>
-                                            <p className="text-md font-mono font-bold text-slate-700">
-                                                {pm.type === 'promptpay' ? pm.promptpay_number : pm.account_number}
-                                            </p>
-                                            <p className="text-xs text-slate-400">{pm.account_name}</p>
-
-                                            {pm.type === 'promptpay' && pm.promptpay_number && (
-                                                <div className="mt-2 p-2 bg-white border border-slate-100 rounded-lg inline-block">
-                                                    <QRCodeSVG
-                                                        value={generatePayload(pm.promptpay_number, { amount: draft.total_amount })}
-                                                        size={100}
-                                                        level="M"
-                                                    />
-                                                    <p className="text-[10px] text-center mt-1 font-bold text-slate-400">SCAN TO PAY</p>
-                                                </div>
-                                            )}
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-end gap-3">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">เลขที่</p>
+                                                <p className="text-sm font-mono font-bold text-slate-900">{previewId} (ร่าง)</p>
+                                            </div>
+                                            <div className="flex items-center justify-end gap-3">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">วันที่</p>
+                                                <p className="text-sm font-bold text-slate-900">{new Date().toLocaleDateString('th-TH', {
+                                                    year: 'numeric', month: 'long', day: 'numeric'
+                                                })}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
+                                </div>
 
-                        {/* Grand Total */}
-                        <div className="w-[30%]">
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-slate-500 font-bold uppercase tracking-widest">รวมค่าสินค้า</span>
-                                    <span className="font-bold">฿{draft.subtotal.toLocaleString()}</span>
+                                {/* Customer Section (Repeated on every page) */}
+                                <div className="mb-4">
+                                    <div className="p-3 bg-slate-100 rounded-lg border border-slate-100">
+                                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ข้อมูลลูกค้า</h3>
+                                        <div className="text-sm font-medium text-slate-900 flex justify-between items-center">
+                                            <span className="font-bold">{draft.customer_name}</span>
+                                            <span className="text-slate-500">{draft.customer_phone}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-slate-500 font-bold uppercase tracking-widest">ค่าแรง/ค่าบริการ</span>
-                                    <span className="font-bold">฿{draft.labor_cost.toLocaleString()}</span>
-                                </div>
-                                <div className="h-px bg-slate-100" />
-                                <div className="flex justify-between items-center pt-2">
-                                    <span className="text-sm font-black uppercase text-slate-900 tracking-widest">รวมยอดสุทธิ</span>
-                                    <span className="text-2xl font-black text-slate-900">฿{draft.total_amount.toLocaleString()}</span>
-                                </div>
-                            </div>
 
-                            {/* Signatures */}
-                            <div className="mt-20 pt-8 border-t border-slate-200 text-center">
-                                <p className="text-xs font-black text-slate-900 uppercase tracking-widest">ผู้รับเงิน / Receiver Signature</p>
-                                <div className="mt-12 h-px bg-slate-900 w-full mx-auto" />
-                                <p className="mt-2 text-sm font-bold text-slate-400">({profile?.full_name || 'ผู้รับเงิน'})</p>
+                                {/* Table */}
+                                <div className="flex-1">
+                                    <table className="w-full mb-4">
+                                        <thead>
+                                            <tr className="border-y border-slate-200 bg-slate-100">
+                                                <th className="py-2 text-left font-bold text-[10px] text-slate-500 uppercase tracking-wider pl-4">รายการ</th>
+                                                <th className="py-2 text-center font-bold text-[10px] text-slate-500 uppercase tracking-wider w-16">จำนวน</th>
+                                                <th className="py-2 text-right font-bold text-[10px] text-slate-500 uppercase tracking-wider w-24">ราคา</th>
+                                                <th className="py-2 text-right font-bold text-[10px] text-slate-500 uppercase tracking-wider w-24 pr-4">รวม</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {chunk.map((item: any, i: number) => (
+                                                <tr key={i}>
+                                                    <td className="py-2 pl-4">
+                                                        <p className="font-medium text-slate-900 text-xs">{item.name}</p>
+                                                    </td>
+                                                    <td className="py-2 text-center text-slate-600 font-medium text-xs">{item.quantity}</td>
+                                                    <td className="py-2 text-right text-slate-600 font-medium text-xs">฿{item.price.toLocaleString()}</td>
+                                                    <td className="py-2 pr-4 text-right font-bold text-slate-900 text-xs">฿{(item.price * item.quantity).toLocaleString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Footer / Summary (ONLY ON LAST PAGE) */}
+                                {isLastPage ? (
+                                    <div className="grid grid-cols-12 gap-8 mt-auto pt-6 border-t border-slate-200">
+                                        {/* Left: Payment */}
+                                        <div className="col-span-12 md:col-span-7 space-y-4">
+                                            <div>
+                                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">ชำระเงินโดย</h3>
+                                                <div className="space-y-3">
+                                                    {selectedPaymentMethods.map(pm => (
+                                                        <div key={pm.id} className="flex items-start gap-3">
+                                                            <div className="p-1.5 bg-slate-100 rounded-lg shrink-0 border border-slate-100">
+                                                                {pm.type === 'promptpay' ? <Smartphone className="h-4 w-4 text-slate-900" /> : <Landmark className="h-4 w-4 text-slate-900" />}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-xs font-bold text-slate-900 truncate">
+                                                                    {pm.type === 'promptpay' ? 'พร้อมเพย์' : pm.bank_name}
+                                                                </p>
+                                                                <p className="text-[10px] font-mono text-slate-600 truncate">
+                                                                    {pm.type === 'promptpay' ? pm.promptpay_number : pm.account_number}
+                                                                </p>
+                                                                {pm.account_name && <p className="text-[10px] text-slate-400 truncate">{pm.account_name}</p>}
+
+                                                                {pm.type === 'promptpay' && pm.promptpay_number && (
+                                                                    <div className="mt-2 shrink-0">
+                                                                        <QRCodeCanvas
+                                                                            value={generatePayload(pm.promptpay_number, { amount: draft.total_amount })}
+                                                                            size={60}
+                                                                            level="L"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Right: Totals */}
+                                        <div className="col-span-12 md:col-span-5">
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-slate-500 font-medium">รวมเป็นเงิน</span>
+                                                    <span className="font-bold text-slate-900">฿{draft.subtotal.toLocaleString()}</span>
+                                                </div>
+                                                {draft.labor_cost > 0 && (
+                                                    <div className="flex justify-between items-center text-xs">
+                                                        <span className="text-slate-500 font-medium">ค่าบริการ</span>
+                                                        <span className="font-bold text-slate-900">฿{draft.labor_cost.toLocaleString()}</span>
+                                                    </div>
+                                                )}
+                                                <div className="h-px bg-slate-200 my-2" />
+                                                <div className="flex justify-between items-center text-lg">
+                                                    <span className="font-bold text-slate-900">ยอดสุทธิ</span>
+                                                    <span className="font-bold text-slate-900">฿{draft.total_amount.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-8 text-center">
+                                                <div className="border-t border-slate-300 w-3/4 mx-auto mb-2" />
+                                                <p className="text-[10px] text-slate-400 uppercase tracking-wider">ผู้รับเงิน / Collector</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null}
+
                             </div>
-                        </div>
-                    </div>
+                        )
+                    })}
                 </div>
-            </Card>
 
-            <style jsx global>{`
-                @media print {
-                    .no-print, nav, aside, button, .action-bar { display: none !important; }
-                    body { background: white; padding: 0; margin: 0; }
-                    .printable-content { 
-                        box-shadow: none !important; 
-                        margin: 0 !important; 
-                        padding: 10mm !important;
-                        -webkit-print-color-adjust: exact;
+                <style jsx global>{`
+                    @media print {
+                        @page { margin: 0; size: A4 portrait; }
+                        * {
+                            -webkit-print-color-adjust: exact !important;
+                            print-color-adjust: exact !important;
+                        }
+                        body, main { 
+                            background: white !important; 
+                            margin: 0 !important; 
+                            padding: 0 !important; 
+                            width: 100% !important; 
+                            max-width: none !important;
+                        }
+                        /* Hide Layout UI */
+                        aside, header, nav, .sidebar { display: none !important; }
+                        /* Restore Receipt Visibility */
+                        .no-print { display: none !important; }
+                        .print\\:shadow-none { box-shadow: none !important; border: none !important; }
+                        .print\\:break-after-page { break-after: page; }
+                        .print\\:mx-0 { margin-left: 0 !important; margin-right: 0 !important; }
+                        
+                        /* Ensure exact A4 sizing on print - STRICT */
+                        .receipt-page {
+                             width: 210mm !important;
+                             height: 296mm !important;
+                             position: relative !important;
+                             margin: 0 !important;
+                             padding: 15mm !important;
+                             overflow: hidden !important;
+                             page-break-after: always;
+                             left: 0 !important;
+                             top: 0 !important;
+                        }
+                        /* Prevent blank page after the last page */
+                        .receipt-page:last-child {
+                            page-break-after: auto !important;
+                        }
                     }
-                }
-            `}</style>
+                `}</style>
+            </div>
         </div>
     )
 }

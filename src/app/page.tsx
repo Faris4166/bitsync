@@ -14,6 +14,7 @@ import {
   MousePointerClick
 } from "lucide-react";
 import Link from "next/link";
+import Image from 'next/image';
 
 export default function LandingPage() {
   const { isSignedIn } = useUser();
@@ -54,8 +55,9 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 border-b border-border/40 glass">
         <div className="flex items-center justify-between px-4 md:px-8 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center transition-all duration-500 group-hover:rotate-360 shadow-lg shadow-primary/20">
-              <Sparkles className="text-primary-foreground h-6 w-6 fill-current" />
+            <div className="w-10 h-10 flex items-center justify-center transition-all duration-500 group-hover:rotate-360 shadow-primary/20">
+              {/* <Sparkles className="text-primary-foreground h-6 w-6 fill-current" /> */}
+              <Image src="/BookMyGear.svg" alt="BookMyGear" width={50} height={50} className="fill-current" />
             </div>
             <span className="text-2xl font-black tracking-tighter italic">
               Bit<span className="text-primary">Sync</span>
@@ -63,11 +65,6 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href={isSignedIn ? "/auth/home" : "/sign-in"}>
-              <Button variant="ghost" className="font-bold hover:bg-primary/10 hover:text-primary rounded-xl px-6 transition-all">
-                {isSignedIn ? "Go to App" : "Sign In"}
-              </Button>
-            </Link>
             {!isSignedIn && (
               <SignUpButton mode="modal">
                 <Button className="bg-primary text-primary-foreground font-bold rounded-xl px-6 shadow-lg shadow-primary/20 hover:scale-105 transition-all">
@@ -92,7 +89,7 @@ export default function LandingPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
             </span>
-            V.1.2.2 • PREMIUM RELEASE
+            V.1.2.2 • Coming soon
           </motion.div>
 
           <motion.h1
@@ -149,7 +146,7 @@ export default function LandingPage() {
                   <div className="w-3.5 h-3.5 rounded-full bg-green-500/40" />
                 </div>
                 <div className="bg-background/50 border border-border/20 px-6 py-1.5 rounded-full text-[12px] text-muted-foreground/60 w-1/2 text-center font-medium tracking-wide">
-                  bitsync-pos.io/v1/dashboard
+                  https://bitsync-iota.vercel.app/
                 </div>
                 <div className="w-10" />
               </div>
@@ -234,7 +231,7 @@ export default function LandingPage() {
             </span>
           </div>
           <p className="text-sm font-bold text-muted-foreground/60 tracking-widest uppercase">
-            © 2026 BitSync POS System. Built for winners.
+            © 2026 BitSync @Faris งานส่งครู
           </p>
           <div className="flex gap-8">
             <span className="text-sm font-bold hover:text-primary cursor-pointer transition-colors">Privacy</span>

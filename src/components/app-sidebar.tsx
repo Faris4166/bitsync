@@ -1,5 +1,7 @@
 "use client"
 
+import Image from "next/image"
+
 import Link from "next/link"
 import {
   Receipt,
@@ -36,11 +38,11 @@ import { dark } from "@clerk/themes"
 import { useTheme } from "next-themes"
 
 const items = [
-  { title: "Home", url: "/auth/home", icon: Home },
-  { title: "Receipt", url: "/auth/receipt", icon: Receipt },
-  { title: "Products", url: "/auth/products", icon: PackageSearch },
-  { title: "History", url: "/auth/history", icon: History },
-  { title: "Settings", url: "/auth/settings", icon: Settings },
+  { title: "หน้าหลัก", url: "/auth/home", icon: Home },
+  { title: "ออกใบเสร็จ", url: "/auth/receipt", icon: Receipt },
+  { title: "จัดการสินค้า", url: "/auth/products", icon: PackageSearch },
+  { title: "ประวัติรายการ", url: "/auth/history", icon: History },
+  { title: "ตั้งค่า", url: "/auth/settings", icon: Settings },
 ]
 
 export function AppSidebar() {
@@ -48,13 +50,14 @@ export function AppSidebar() {
   const { resolvedTheme } = useTheme()
 
   return (
-    <Sidebar className="border-r border-sidebar-border/50 glass">
+    <Sidebar className="border-r border-sidebar-border/50 glass print:hidden">
       {/* ================= CONTENT ================= */}
       <SidebarContent>
         <SidebarGroup className="px-3">
           <Link href="/auth/home" className="flex items-center gap-2.5 py-8 px-2 group">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-sm transition-all duration-300 group-hover:scale-105">
-              <Sparkles className="text-primary-foreground h-5 w-5 fill-current" />
+            <div className="w-10 h-10 flex items-center justify-center transition-all duration-500 group-hover:rotate-360 shadow-primary/20">
+              {/* <Sparkles className="text-primary-foreground h-5 w-5 fill-current" /> */}
+              <Image src="/BookMyGear.svg" alt="BookMyGear" width={50} height={50} className="fill-current" />
             </div>
             <span className="text-xl font-bold tracking-tight">
               Bit<span className="text-primary">Sync</span>
@@ -109,7 +112,7 @@ export function AppSidebar() {
         <SignedOut>
           <SignInButton mode="modal">
             <Button size="sm" className="w-full h-10 bg-primary text-primary-foreground rounded-lg font-bold shadow-sm hover:opacity-90 transition-all border-none">
-              Sign In
+              เข้าสู่ระบบ
             </Button>
           </SignInButton>
         </SignedOut>

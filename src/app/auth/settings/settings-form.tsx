@@ -231,7 +231,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                        data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
                         >
                             <User className="h-4 w-4" />
-                            <span>Profile</span>
+                            <span>ข้อมูลส่วนตัว</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="shop"
@@ -240,7 +240,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                        data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
                         >
                             <Building2 className="h-4 w-4" />
-                            <span>Shop Details</span>
+                            <span>ข้อมูลร้านค้า</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="payment"
@@ -249,7 +249,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                        data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
                         >
                             <Wallet className="h-4 w-4" />
-                            <span>Payment Methods</span>
+                            <span>ช่องทางการชำระเงิน</span>
                         </TabsTrigger>
                     </TabsList>
                 </div>
@@ -260,8 +260,8 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                     <TabsContent value="profile" className="focus-visible:outline-none m-0 animate-in fade-in slide-in-from-right-4 duration-500">
                         <section className="space-y-8">
                             <div className="space-y-1 px-1">
-                                <h2 className="text-2xl font-bold tracking-tight">Personal Information</h2>
-                                <p className="text-sm font-medium text-muted-foreground">Manage your identity and contact details for the system.</p>
+                                <h2 className="text-2xl font-bold tracking-tight">ข้อมูลส่วนตัว</h2>
+                                <p className="text-sm font-medium text-muted-foreground">จัดการข้อมูลตัวตนและรายละเอียดการติดต่อของคุณ</p>
                             </div>
 
                             <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
@@ -269,7 +269,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     <CardContent className="space-y-8 p-8">
                                         <div className="grid md:grid-cols-2 gap-8">
                                             <div className="grid gap-3">
-                                                <Label htmlFor="full_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Full Name</Label>
+                                                <Label htmlFor="full_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ชื่อ-นามสกุล</Label>
                                                 <Input
                                                     id="full_name"
                                                     className="rounded-xl h-12 border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all font-medium"
@@ -279,7 +279,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                                 />
                                             </div>
                                             <div className="grid gap-3">
-                                                <Label htmlFor="phone" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Phone Number</Label>
+                                                <Label htmlFor="phone" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">เบอร์โทรศัพท์</Label>
                                                 <Input
                                                     id="phone"
                                                     className="rounded-xl h-12 border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all font-medium"
@@ -290,7 +290,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                             </div>
                                         </div>
                                         <div className="grid gap-3">
-                                            <Label htmlFor="address" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Business Address</Label>
+                                            <Label htmlFor="address" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ที่อยู่ร้านค้า / ที่อยู่สำหรับใบเสร็จ</Label>
                                             <Textarea
                                                 id="address"
                                                 className="min-h-[160px] rounded-xl border-border/60 bg-background/50 p-4 focus-visible:ring-primary/20 transition-all font-medium resize-none leading-relaxed"
@@ -303,7 +303,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     <CardFooter className="justify-end border-t border-border/50 p-6 bg-muted/5">
                                         <Button type="submit" className="rounded-xl h-11 px-8 font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary text-primary-foreground" disabled={isPending}>
                                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Update Profile
+                                            บันทึกข้อมูล
                                         </Button>
                                     </CardFooter>
                                 </form>
@@ -315,8 +315,8 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                     <TabsContent value="shop" className="focus-visible:outline-none m-0 animate-in fade-in slide-in-from-right-4 duration-500">
                         <section className="space-y-8">
                             <div className="space-y-1 px-1">
-                                <h2 className="text-2xl font-bold tracking-tight">Shop Branding</h2>
-                                <p className="text-sm font-medium text-muted-foreground">Your business identity as it appears on receipts and dashboard.</p>
+                                <h2 className="text-2xl font-bold tracking-tight">แบรนด์ร้านค้า</h2>
+                                <p className="text-sm font-medium text-muted-foreground">เอกลักษณ์ธุรกิจของคุณที่จะปรากฏบนใบเสร็จและแดชบอร์ด</p>
                             </div>
 
                             <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
@@ -324,7 +324,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     <CardContent className="space-y-10 p-8">
                                         <div className="grid gap-8">
                                             <div className="grid gap-3">
-                                                <Label htmlFor="shop_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Business Name</Label>
+                                                <Label htmlFor="shop_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ชื่อร้านค้า</Label>
                                                 <Input
                                                     id="shop_name"
                                                     className="rounded-xl h-12 border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all font-medium"
@@ -335,7 +335,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                             </div>
 
                                             <div className="grid gap-3">
-                                                <Label htmlFor="logo" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Brand Logo</Label>
+                                                <Label htmlFor="logo" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">โลโก้ร้านค้า</Label>
                                                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 mt-1">
                                                     <div className="relative group overflow-hidden bg-muted/20 border border-dashed border-border/60 rounded-2xl w-40 h-40 flex items-center justify-center transition-all hover:border-primary/40 hover:bg-muted/30 shadow-inner">
                                                         {profile.shop_logo_url ? (
@@ -386,7 +386,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                                                 className="text-destructive h-auto p-0 font-bold text-xs justify-start opacity-70 hover:opacity-100 transition-opacity"
                                                                 onClick={() => setProfile({ ...profile, shop_logo_url: '' })}
                                                             >
-                                                                <Trash2 className="h-3 w-3 mr-1" /> Remove Current Logo
+                                                                <Trash2 className="h-3 w-3 mr-1" /> ลบโลโก้ปัจจุบัน
                                                             </Button>
                                                         )}
                                                     </div>
@@ -397,7 +397,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     <CardFooter className="justify-end border-t border-border/50 p-6 bg-muted/5">
                                         <Button type="submit" className="rounded-xl h-11 px-8 font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary text-primary-foreground" disabled={isPending}>
                                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Save Branding
+                                            บันทึกแบรนด์
                                         </Button>
                                     </CardFooter>
                                 </form>
@@ -410,11 +410,11 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                         <section className="space-y-8">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
                                 <div className="space-y-1">
-                                    <h2 className="text-2xl font-bold tracking-tight">Payment Methods</h2>
-                                    <p className="text-sm font-medium text-muted-foreground">Configure how you receive payments from customers.</p>
+                                    <h2 className="text-2xl font-bold tracking-tight">ช่องทางการชำระเงิน</h2>
+                                    <p className="text-sm font-medium text-muted-foreground">กำหนดช่องทางรับเงินจากลูกค้าของคุณ</p>
                                 </div>
                                 <Button onClick={() => setShowAddPayment(true)} className="rounded-xl h-11 px-6 font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0">
-                                    <Plus className="mr-2 h-4 w-4" /> Add Account
+                                    <Plus className="mr-2 h-4 w-4" /> เพิ่มบัญชีรับเงิน
                                 </Button>
                             </div>
 
@@ -423,9 +423,9 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     <div className="p-5 rounded-full bg-muted/20 mb-6">
                                         <Wallet className="h-12 w-12 text-muted-foreground/30" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-foreground">No accounts configured</h3>
+                                    <h3 className="text-xl font-bold text-foreground">ยังไม่มีช่องทางการชำระเงิน</h3>
                                     <p className="text-sm text-muted-foreground max-w-[320px] mt-2 leading-relaxed opacity-80">
-                                        Add your PromptPay or Bank Account to start receiving payments on your digital receipts.
+                                        เพิ่มบัญชี PromptPay หรือบัญชีธนาคารเพื่อรับชำระเงินผ่านใบเสร็จดิจิทัล
                                     </p>
                                 </div>
                             ) : (
@@ -465,22 +465,22 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                             {showAddPayment && (
                                 <Card className="rounded-2xl border border-primary/20 bg-primary/5 shadow-xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
                                     <CardHeader className="pb-6 pt-10 px-10">
-                                        <CardTitle className="text-xl font-bold tracking-tight">New Payment Account</CardTitle>
-                                        <CardDescription className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-2">Account Configuration</CardDescription>
+                                        <CardTitle className="text-xl font-bold tracking-tight">เพิ่มช่องทางชำระเงิน</CardTitle>
+                                        <CardDescription className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mt-2">ACCOUNT CONFIGURATION</CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-10 px-10 pb-8">
                                         <div className="grid gap-4">
-                                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Account Type</Label>
+                                            <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ประเภทบัญชี</Label>
                                             <Select
                                                 value={newPayment.type}
                                                 onValueChange={val => setNewPayment({ ...newPayment, type: val as any })}
                                             >
                                                 <SelectTrigger className="w-full h-12 rounded-xl bg-background border-border/60 font-medium">
-                                                    <SelectValue placeholder="Select type" />
+                                                    <SelectValue placeholder="เลือกประเภท" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="promptpay">PromptPay (QR Support)</SelectItem>
-                                                    <SelectItem value="bank_account">Traditional Bank Account</SelectItem>
+                                                    <SelectItem value="promptpay">พร้อมเพย์ (รองรับ QR)</SelectItem>
+                                                    <SelectItem value="bank_account">บัญชีธนาคาร</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -488,22 +488,22 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                         {newPayment.type === 'promptpay' ? (
                                             <div className="grid md:grid-cols-2 gap-8 animate-in fade-in duration-500">
                                                 <div className="grid gap-4">
-                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">PromptPay Type</Label>
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ประเภทพร้อมเพย์</Label>
                                                     <Select
                                                         value={newPayment.promptpay_type || 'phone_number'}
                                                         onValueChange={val => setNewPayment({ ...newPayment, promptpay_type: val as any })}
                                                     >
                                                         <SelectTrigger className="w-full h-12 rounded-xl bg-background border-border/60">
-                                                            <SelectValue placeholder="Select type" />
+                                                            <SelectValue placeholder="เลือกประเภท" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="phone_number">Phone Number</SelectItem>
-                                                            <SelectItem value="citizen_id">Citizen ID</SelectItem>
+                                                            <SelectItem value="phone_number">เบอร์โทรศัพท์</SelectItem>
+                                                            <SelectItem value="citizen_id">เลขบัตรประชาชน</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
                                                 <div className="grid gap-4">
-                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">PromptPay Number</Label>
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">เลขพร้อมเพย์</Label>
                                                     <Input
                                                         className="h-12 rounded-xl bg-background border-border/60 font-mono font-bold"
                                                         value={newPayment.promptpay_number || ''}
@@ -515,7 +515,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                         ) : (
                                             <div className="grid md:grid-cols-2 gap-8 animate-in fade-in duration-500">
                                                 <div className="grid gap-4">
-                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Bank Name</Label>
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ชื่อธนาคาร</Label>
                                                     <Input
                                                         className="h-12 rounded-xl bg-background border-border/60 font-medium"
                                                         value={newPayment.bank_name || ''}
@@ -524,7 +524,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                                     />
                                                 </div>
                                                 <div className="grid gap-4">
-                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Account Number</Label>
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">เลขบัญชี</Label>
                                                     <Input
                                                         className="h-12 rounded-xl bg-background border-border/60 font-mono font-bold"
                                                         value={newPayment.account_number || ''}
@@ -533,7 +533,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                                     />
                                                 </div>
                                                 <div className="md:col-span-2 grid gap-4">
-                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Account Holder Name</Label>
+                                                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ชื่อบัญชี</Label>
                                                     <Input
                                                         className="h-12 rounded-xl bg-background border-border/60 font-medium"
                                                         value={newPayment.account_name || ''}
@@ -546,11 +546,11 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     </CardContent>
                                     <CardFooter className="justify-end gap-3 border-t border-border/20 p-8 bg-muted/5">
                                         <Button variant="ghost" size="sm" onClick={() => setShowAddPayment(false)} disabled={isPending} className="rounded-xl font-bold px-6">
-                                            Cancel
+                                            ยกเลิก
                                         </Button>
                                         <Button size="sm" onClick={handleAddPayment} disabled={isPending} className="rounded-xl font-bold h-11 px-8">
                                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Add Account
+                                            เพิ่มบัญชี
                                         </Button>
                                     </CardFooter>
                                 </Card>

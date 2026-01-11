@@ -6,9 +6,28 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Plus, Trash2, Package, Upload, Image as ImageIcon, DollarSign, ListOrdered } from 'lucide-react'
+import { Loader2, Plus, Trash2, Package, Upload, Image as ImageIcon, DollarSign, ListOrdered, Edit, AlertTriangle } from 'lucide-react'
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination"
 
 type Product = {
     id?: string
@@ -26,12 +45,18 @@ export default function ProductManagement() {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
 
+    const [editingId, setEditingId] = useState<string | null>(null)
+    const [deleteId, setDeleteId] = useState<string | null>(null)
+
     const [newProduct, setNewProduct] = useState<Product>({
         name: '',
         price: 0,
         quantity: 0,
         image_url: ''
     })
+
+    const itemsPerPage = 12
+    const [currentPage, setCurrentPage] = useState(1)
 
     // --- API Helpers ---
 
@@ -79,7 +104,7 @@ export default function ProductManagement() {
                     })
                 })
 
-                if (!res.ok) throw new Error('Upload failed')
+                if (!res.ok) throw new Error('อัปโหลดล้มเหลว')
                 const data = await res.json()
                 setNewProduct(prev => ({ ...prev, image_url: data.url }))
                 toast.success('อัปโหลดรูปภาพเรียบร้อย')
@@ -92,7 +117,7 @@ export default function ProductManagement() {
         }
     }, [])
 
-    const handleAddProduct = React.useCallback(async (e: React.FormEvent) => {
+    const handleSaveProduct = React.useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
         if (!newProduct.name || newProduct.price < 0) {
             toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
@@ -101,8 +126,11 @@ export default function ProductManagement() {
 
         startTransition(async () => {
             try {
-                const res = await fetch('/api/products', {
-                    method: 'POST',
+                const url = editingId ? `/api/products?id=${editingId}` : '/api/products'
+                const method = editingId ? 'PUT' : 'POST'
+
+                const res = await fetch(url, {
+                    method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newProduct)
                 })
@@ -113,61 +141,91 @@ export default function ProductManagement() {
                         const errorData = await res.json()
                         errorMessage = errorData.error || errorMessage
                     } catch (e) {
-                        errorMessage = `Error ${res.status}: ไม่สามารถบันทึกได้ (อาจยังไม่ได้รัน SQL หรือตั้งค่า Key ไม่ถูกต้อง)`
+                        errorMessage = `Error ${res.status}: ไม่สามารถบันทึกได้`
                     }
                     throw new Error(errorMessage)
                 }
 
-                toast.success('บันทึกสินค้าเรียบร้อยแล้ว')
+                toast.success(editingId ? 'อัปเดตสินค้าเรียบร้อย' : 'บันทึกสินค้าเรียบร้อย')
                 setIsDialogOpen(false)
                 setNewProduct({ name: '', price: 0, quantity: 0, image_url: '' })
+                setEditingId(null)
                 await fetchProducts()
             } catch (err: any) {
                 console.error('Product Save Error Detail:', err)
                 toast.error(err.message || 'เกิดข้อผิดพลาดที่ไม่รู้จัก')
             }
         })
-    }, [newProduct, fetchProducts])
+    }, [newProduct, fetchProducts, editingId])
 
-    const handleDeleteProduct = React.useCallback(async (id: string) => {
-        if (!confirm('ยืนยันการลบสินค้านี้?')) return
+    const handleEditClick = (product: Product) => {
+        setNewProduct({
+            name: product.name,
+            price: product.price,
+            quantity: product.quantity,
+            image_url: product.image_url
+        })
+        setEditingId(product.id!)
+        setIsDialogOpen(true)
+    }
+
+    const confirmDelete = React.useCallback(async () => {
+        if (!deleteId) return
 
         startTransition(async () => {
             try {
-                const res = await fetch(`/api/products?id=${id}`, {
+                const res = await fetch(`/api/products?id=${deleteId}`, {
                     method: 'DELETE'
                 })
 
-                if (!res.ok) throw new Error('Failed to delete')
+                if (!res.ok) throw new Error('ลบสินค้าไม่สำเร็จ')
 
-                setProducts(prev => prev.filter(p => p.id !== id))
+                setProducts(prev => prev.filter(p => p.id !== deleteId))
                 toast.success('ลบสินค้าเรียบร้อย')
+                setDeleteId(null)
             } catch (err) {
                 console.error(err)
                 toast.error('เกิดข้อผิดพลาดในการลบ')
             }
         })
-    }, [])
+    }, [deleteId])
+
+    const indexOfLastItem = currentPage * itemsPerPage
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage
+    const currentProducts = products.slice(indexOfFirstItem, indexOfLastItem)
+    const totalPages = Math.ceil(products.length / itemsPerPage)
+
+    const handlePageChange = (page: number) => {
+        if (page > 0 && page <= totalPages) {
+            setCurrentPage(page)
+        }
+    }
 
     return (
         <div className="w-full max-w-6xl mx-auto space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">รายการสินค้า</h1>
                     <p className="text-muted-foreground font-medium mt-1 text-sm">จัดการรายการสินค้าในคลังของคุณ</p>
                 </div>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                    setIsDialogOpen(open)
+                    if (!open) {
+                        setNewProduct({ name: '', price: 0, quantity: 0, image_url: '' })
+                        setEditingId(null)
+                    }
+                }}>
                     <DialogTrigger asChild>
                         <Button className="rounded-lg h-10 px-6 shadow-sm bg-primary text-primary-foreground font-bold transition-all">
-                            <Plus className="mr-2 h-5 w-5" /> Add Product
+                            <Plus className="mr-2 h-5 w-5" /> เพิ่มสินค้า
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[450px] rounded-xl border border-border bg-card p-6">
                         <DialogHeader className="space-y-2">
-                            <DialogTitle className="text-2xl font-bold tracking-tight">เพิ่มสินค้า</DialogTitle>
-                            <DialogDescription className="text-sm font-medium text-muted-foreground">กรอกข้อมูลรายละเอียดสินค้าและอัปโหลดรูปภาพ</DialogDescription>
+                            <DialogTitle className="text-2xl font-bold tracking-tight">{editingId ? 'แก้ไขสินค้า' : 'เพิ่มสินค้า'}</DialogTitle>
+                            <DialogDescription className="text-sm font-medium text-muted-foreground">{editingId ? 'แก้ไขข้อมูลรายละเอียดสินค้าของคุณ' : 'กรอกข้อมูลรายละเอียดสินค้าและอัปโหลดรูปภาพ'}</DialogDescription>
                         </DialogHeader>
-                        <form onSubmit={handleAddProduct} className="space-y-6 py-4">
+                        <form onSubmit={handleSaveProduct} className="space-y-6 py-4">
                             <div className="grid gap-6">
                                 <div className="grid gap-2">
                                     <Label htmlFor="name" className="font-semibold text-muted-foreground ml-1">ชื่อสินค้า</Label>
@@ -229,7 +287,7 @@ export default function ProductManagement() {
                                             ) : (
                                                 <div className="flex flex-col items-center text-muted-foreground/30">
                                                     <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Upload</span>
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">อัปโหลด</span>
                                                 </div>
                                             )}
                                             {isUploading && (
@@ -272,7 +330,7 @@ export default function ProductManagement() {
                             <DialogFooter className="pt-4">
                                 <Button type="submit" className="w-full rounded-lg h-12 text-base font-bold bg-primary text-primary-foreground shadow-sm" disabled={isPending || isUploading}>
                                     {isPending && <Loader2 className="mr-3 h-5 w-5 animate-spin" />}
-                                    Create Product
+                                    {editingId ? 'บันทึกการเปลี่ยนแปลง' : 'บันทึกสินค้า'}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -294,50 +352,113 @@ export default function ProductManagement() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {products.map(product => (
-                        <Card key={product.id} className="group relative overflow-hidden rounded-xl border-border shadow-sm hover:shadow-md transition-all duration-300 bg-card">
-                            <div className="aspect-4/5 w-full relative overflow-hidden bg-muted/10 group-hover:bg-muted/20 transition-colors">
+                    {currentProducts.map(product => (
+                        <Card key={product.id} className="group relative overflow-hidden rounded-lg border border-border/60 shadow-none hover:border-primary/50 transition-all duration-300 bg-card">
+                            <div className="aspect-square w-full relative overflow-hidden bg-muted/5 border-b border-border/60">
                                 {product.image_url ? (
                                     <img
                                         src={product.image_url}
                                         alt={product.name}
-                                        className="w-full h-full object-contain p-6 transition-transform duration-700 group-hover:scale-110 drop-shadow-xl"
+                                        className="w-full h-full object-contain p-4 mix-blend-multiply"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-muted-foreground/10">
-                                        <Package className="h-20 w-20" />
+                                        <Package className="h-16 w-16" />
                                     </div>
                                 )}
-                                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                                    <Button
-                                        variant="destructive"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-lg shadow-md active:scale-95 transition-all"
-                                        onClick={() => handleDeleteProduct(product.id!)}
-                                        disabled={isPending}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <div className="absolute bottom-3 left-3">
-                                    <div className="px-3 py-1 bg-background/80 backdrop-blur-sm rounded-lg text-[9px] font-bold uppercase tracking-widest border border-border shadow-sm text-muted-foreground">
-                                        Stock: {product.quantity}
-                                    </div>
+
+                                {/* Status Badge */}
+                                <div className="absolute top-2 left-2">
+                                    <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-sm border ${product.quantity > 0 ? 'bg-background/80 text-foreground/70 border-border/50' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>
+                                        {product.quantity > 0 ? `Stock: ${product.quantity}` : 'Out of Stock'}
+                                    </span>
                                 </div>
                             </div>
-                            <CardContent className="p-5">
-                                <h3 className="font-bold text-lg mb-1 truncate text-foreground/90 transition-colors">{product.name}</h3>
-                                <div className="flex items-center justify-between">
-                                    <p className="text-2xl font-bold text-primary tracking-tight">
-                                        ฿{product.price.toLocaleString()}
+
+                            <CardContent className="p-4 space-y-3">
+                                <div>
+                                    <h3 className="font-semibold text-sm leading-tight text-foreground truncate" title={product.name}>{product.name}</h3>
+                                    <p className="text-xs text-muted-foreground mt-1">รหัส: {product.id?.substring(0, 8).toUpperCase()}</p>
+                                </div>
+
+                                <div className="flex items-end justify-between pt-2 border-t border-border/40">
+                                    <p className="text-lg font-bold text-primary font-mono tracking-tight">
+                                        ฿{product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                     </p>
-                                    <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 rounded-md hover:bg-primary/10 hover:text-primary"
+                                            onClick={() => handleEditClick(product)}
+                                        >
+                                            <Edit className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 rounded-md hover:bg-destructive/10 hover:text-destructive"
+                                            onClick={() => setDeleteId(product.id!)}
+                                            disabled={isPending}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
                     ))}
                 </div>
             )}
-        </div>
+
+            {!isInitialLoading && products.length > 0 && (
+                <Pagination className="py-6">
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
+                        </PaginationItem>
+
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <PaginationItem key={page}>
+                                <PaginationLink
+                                    isActive={page === currentPage}
+                                    onClick={() => handlePageChange(page)}
+                                    className="cursor-pointer"
+                                >
+                                    {page}
+                                </PaginationLink>
+                            </PaginationItem>
+                        ))}
+
+                        <PaginationItem>
+                            <PaginationNext onClick={() => handlePageChange(currentPage + 1)} className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            )}
+
+            <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+                <AlertDialogContent className="rounded-xl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" /> ยืนยันการลบสินค้า
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            คุณแน่ใจหรือไม่ที่จะลบสินค้านี้? การกระทำนี้ไม่สามารถเรียกคืนได้
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-lg border-border font-semibold">ยกเลิก</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg font-bold"
+                        >
+                            ยืนยันลบ
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div >
     )
 }
