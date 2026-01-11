@@ -149,64 +149,59 @@ export default function ReceiptForm() {
                     <CardContent className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <Label className="font-semibold text-muted-foreground">ชื่อ-นามสกุล</Label>
-                            <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={customerOpen}
-                                        className="w-full justify-between h-10 border-border text-left font-normal"
-                                    >
-                                        {customer.name ? customer.name : "พิมพ์หรือเลือกชื่อลูกค้า..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[300px] p-0" align="start">
-                                    <Command>
-                                        <CommandInput
-                                            placeholder="ค้นหาชื่อลูกค้า..."
-                                            onValueChange={(val) => {
-                                                // Always allow manual typing
-                                                setCustomer(prev => ({ ...prev, name: val }))
-                                            }}
-                                        />
-                                        <CommandList>
-                                            <CommandEmpty className="py-2 px-4 text-sm text-muted-foreground">
-                                                <div className="flex items-center gap-2" onClick={() => {
-                                                    setCustomerOpen(false)
-                                                    toast.success('ใช้ชื่อลูกค้าใหม่: ' + customer.name)
-                                                }}>
-                                                    <Plus className="h-4 w-4" /> เพิ่มลูกค้าใหม่ "{customer.name}"
-                                                </div>
-                                            </CommandEmpty>
-                                            <CommandGroup heading="ลูกค้าเก่า">
-                                                {existingCustomers.map((c) => (
-                                                    <CommandItem
-                                                        key={c.name}
-                                                        value={c.name}
-                                                        onSelect={(currentValue) => {
-                                                            setCustomer({ name: currentValue, phone: c.phone })
-                                                            setCustomerOpen(false)
-                                                            toast.success('ดึงข้อมูลลูกค้าแล้ว')
-                                                        }}
-                                                    >
-                                                        <Check
-                                                            className={cn(
-                                                                "mr-2 h-4 w-4",
-                                                                customer.name === c.name ? "opacity-100" : "opacity-0"
-                                                            )}
-                                                        />
-                                                        <div className="flex flex-col">
-                                                            <span>{c.name}</span>
-                                                            {c.phone && <span className="text-xs text-muted-foreground">{c.phone}</span>}
-                                                        </div>
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="พิมพ์ชื่อลูกค้า..."
+                                    className="rounded-lg h-10 border-border"
+                                    value={customer.name}
+                                    onChange={(e) => {
+                                        setCustomer(prev => ({ ...prev, name: e.target.value }))
+                                    }}
+                                />
+                                <Popover open={customerOpen} onOpenChange={setCustomerOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-10 w-10 shrink-0 border-border"
+                                        >
+                                            <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[300px] p-0" align="start">
+                                        <Command>
+                                            <CommandInput placeholder="ค้นหาชื่อลูกค้า..." />
+                                            <CommandList>
+                                                <CommandEmpty>ไม่พบข้อมูลลูกค้า</CommandEmpty>
+                                                <CommandGroup heading="ลูกค้าเก่า">
+                                                    {existingCustomers.map((c) => (
+                                                        <CommandItem
+                                                            key={c.name}
+                                                            value={c.name}
+                                                            onSelect={() => {
+                                                                setCustomer({ name: c.name, phone: c.phone })
+                                                                setCustomerOpen(false)
+                                                                toast.success('ดึงข้อมูลลูกค้าแล้ว')
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    customer.name === c.name ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            <div className="flex flex-col">
+                                                                <span>{c.name}</span>
+                                                                {c.phone && <span className="text-xs text-muted-foreground">{c.phone}</span>}
+                                                            </div>
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label className="font-semibold text-muted-foreground">เบอร์โทรศัพท์</Label>
@@ -246,67 +241,63 @@ export default function ReceiptForm() {
                                     {selectedItems.map((item, index) => (
                                         <TableRow key={index} className="border-border/20">
                                             <TableCell className="align-top pt-4">
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            role="combobox"
-                                                            className={cn(
-                                                                "w-full justify-between h-10 bg-background/50 border-border/40 font-normal",
-                                                                !item.name && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            {item.name || "เลือกสินค้า..."}
-                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-[300px] p-0" align="start">
-                                                        <Command>
-                                                            <CommandInput
-                                                                placeholder="ค้นหาสินค้า..."
-                                                                onValueChange={(val) => {
-                                                                    // Allow typing custom name
-                                                                    updateItem(index, 'name', val)
-                                                                }}
-                                                            />
-                                                            <CommandList>
-                                                                <CommandEmpty>
-                                                                    <div
-                                                                        className="flex items-center gap-2 p-2 cursor-pointer hover:bg-accent rounded-sm text-sm"
-                                                                        onClick={() => {
-                                                                            updateItem(index, 'name', item.name) // name is already in local state if we handled onValueChange
-                                                                            updateItem(index, 'id', '') // Clear ID for custom item
-                                                                        }}
-                                                                    >
-                                                                        <Plus className="h-4 w-4" /> ใช้ชื่อสินค้า "{item.name}"
-                                                                    </div>
-                                                                </CommandEmpty>
-                                                                <CommandGroup>
-                                                                    {products.map((product) => (
-                                                                        <CommandItem
-                                                                            key={product.id}
-                                                                            value={product.name}
-                                                                            onSelect={() => {
-                                                                                updateItem(index, 'id', product.id)
-                                                                            }}
-                                                                        >
-                                                                            <Check
-                                                                                className={cn(
-                                                                                    "mr-2 h-4 w-4",
-                                                                                    item.id === product.id ? "opacity-100" : "opacity-0"
-                                                                                )}
-                                                                            />
-                                                                            <div className="flex flex-col">
-                                                                                <span>{product.name}</span>
-                                                                                <span className="text-xs text-muted-foreground">฿{product.price} | คงเหลือ: {product.quantity}</span>
-                                                                            </div>
-                                                                        </CommandItem>
-                                                                    ))}
-                                                                </CommandGroup>
-                                                            </CommandList>
-                                                        </Command>
-                                                    </PopoverContent>
-                                                </Popover>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        placeholder="ชื่อสินค้า..."
+                                                        className="rounded-lg h-10 border-border/40 bg-background/50 min-w-[120px]"
+                                                        value={item.name}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value
+                                                            updateItem(index, 'name', val)
+                                                            // Clear ID when typing manually to treat as new item
+                                                            updateItem(index, 'id', '')
+                                                        }}
+                                                    />
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                className="h-10 w-10 shrink-0 border-border/40"
+                                                            >
+                                                                <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-[300px] p-0" align="start">
+                                                            <Command>
+                                                                <CommandInput placeholder="ค้นหาสินค้า..." />
+                                                                <CommandList>
+                                                                    <CommandEmpty>ไม่พบสินค้านี้</CommandEmpty>
+                                                                    <CommandGroup heading="สินค้าในคลัง">
+                                                                        {products.map((product) => (
+                                                                            <CommandItem
+                                                                                key={product.id}
+                                                                                value={product.name}
+                                                                                onSelect={() => {
+                                                                                    updateItem(index, 'id', product.id)
+                                                                                    updateItem(index, 'name', product.name)
+                                                                                    updateItem(index, 'price', product.price)
+                                                                                    // Keep quantity as is or reset? Keep as is usually better UX
+                                                                                }}
+                                                                            >
+                                                                                <Check
+                                                                                    className={cn(
+                                                                                        "mr-2 h-4 w-4",
+                                                                                        item.id === product.id ? "opacity-100" : "opacity-0"
+                                                                                    )}
+                                                                                />
+                                                                                <div className="flex flex-col">
+                                                                                    <span>{product.name}</span>
+                                                                                    <span className="text-xs text-muted-foreground">฿{product.price} | คงเหลือ: {product.quantity}</span>
+                                                                                </div>
+                                                                            </CommandItem>
+                                                                        ))}
+                                                                    </CommandGroup>
+                                                                </CommandList>
+                                                            </Command>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </div>
                                             </TableCell>
                                             <TableCell className="align-top pt-4">
                                                 <Input
@@ -535,6 +526,12 @@ export default function ReceiptForm() {
                     </CardFooter>
                 </Card>
             </div>
+            {/* Shared Datalists */}
+            <datalist id="product-list">
+                {products.map((p) => (
+                    <option key={p.id} value={p.name}>฿{p.price}</option>
+                ))}
+            </datalist>
         </div>
     )
 }
