@@ -31,8 +31,6 @@ import {
 } from 'recharts'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
 import { toast } from 'sonner'
 
 type Receipt = {
@@ -153,6 +151,9 @@ export default function Dashboard() {
         if (!dashboardRef.current) return
         setIsExporting(true)
         try {
+            const html2canvas = (await import('html2canvas')).default
+            const jsPDF = (await import('jspdf')).default
+
             const canvas = await html2canvas(dashboardRef.current, {
                 scale: 2,
                 useCORS: true,

@@ -166,14 +166,18 @@ export default function ReceiptForm() {
                                         <CommandInput
                                             placeholder="ค้นหาชื่อลูกค้า..."
                                             onValueChange={(val) => {
-                                                if (val !== customer.name) {
-                                                    setCustomer(prev => ({ ...prev, name: val }))
-                                                }
+                                                // Always allow manual typing
+                                                setCustomer(prev => ({ ...prev, name: val }))
                                             }}
                                         />
                                         <CommandList>
                                             <CommandEmpty className="py-2 px-4 text-sm text-muted-foreground">
-                                                พิมพ์ชื่อใหม่เพื่อสร้างลูกค้า
+                                                <div className="flex items-center gap-2" onClick={() => {
+                                                    setCustomerOpen(false)
+                                                    toast.success('ใช้ชื่อลูกค้าใหม่: ' + customer.name)
+                                                }}>
+                                                    <Plus className="h-4 w-4" /> เพิ่มลูกค้าใหม่ "{customer.name}"
+                                                </div>
                                             </CommandEmpty>
                                             <CommandGroup heading="ลูกค้าเก่า">
                                                 {existingCustomers.map((c) => (
@@ -258,9 +262,25 @@ export default function ReceiptForm() {
                                                     </PopoverTrigger>
                                                     <PopoverContent className="w-[300px] p-0" align="start">
                                                         <Command>
-                                                            <CommandInput placeholder="ค้นหาสินค้า..." />
+                                                            <CommandInput
+                                                                placeholder="ค้นหาสินค้า..."
+                                                                onValueChange={(val) => {
+                                                                    // Allow typing custom name
+                                                                    updateItem(index, 'name', val)
+                                                                }}
+                                                            />
                                                             <CommandList>
-                                                                <CommandEmpty>ไม่พบสินค้านี้</CommandEmpty>
+                                                                <CommandEmpty>
+                                                                    <div
+                                                                        className="flex items-center gap-2 p-2 cursor-pointer hover:bg-accent rounded-sm text-sm"
+                                                                        onClick={() => {
+                                                                            updateItem(index, 'name', item.name) // name is already in local state if we handled onValueChange
+                                                                            updateItem(index, 'id', '') // Clear ID for custom item
+                                                                        }}
+                                                                    >
+                                                                        <Plus className="h-4 w-4" /> ใช้ชื่อสินค้า "{item.name}"
+                                                                    </div>
+                                                                </CommandEmpty>
                                                                 <CommandGroup>
                                                                     {products.map((product) => (
                                                                         <CommandItem
