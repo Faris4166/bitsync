@@ -57,7 +57,7 @@ export function AppSidebar() {
           <Link href="/auth/home" className="flex items-center gap-2.5 py-8 px-2 group">
             <div className="w-10 h-10 flex items-center justify-center transition-all duration-500 group-hover:rotate-360 shadow-primary/20">
               {/* <Sparkles className="text-primary-foreground h-5 w-5 fill-current" /> */}
-              <Image src="/BookMyGear.svg" alt="BookMyGear" width={50} height={50} className="fill-current" />
+              <Image src="/BitSync.svg" alt="BitSync" width={50} height={50} className="fill-current" />
             </div>
             <span className="text-xl font-bold tracking-tight">
               Bit<span className="text-primary">Sync</span>

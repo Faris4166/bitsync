@@ -23,32 +23,38 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-primary relative overflow-hidden">
       {/* --- Dynamic Mesh Background --- */}
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            x: [0, 100, 0],
-            y: [0, 50, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[120px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            x: [0, -80, 0],
-            y: [0, 100, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-          className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[100px]"
-        />
+        {/* Mobile: Static Gradient (Low Power) */}
+        <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-background to-emerald-500/5 md:hidden" />
+
+        {/* Desktop: Animated Mesh (High Quality) */}
+        <div className="hidden md:block">
+          <motion.div
+            animate={{
+              scale: [1, 1.2, 1],
+              x: [0, 100, 0],
+              y: [0, 50, 0],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[80px] lg:blur-[120px] will-change-transform"
+          />
+          <motion.div
+            animate={{
+              scale: [1, 1.3, 1],
+              x: [0, -80, 0],
+              y: [0, 100, 0],
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[60px] lg:blur-[100px] will-change-transform"
+          />
+        </div>
       </div>
 
       {/* --- Navbar --- */}
@@ -57,7 +63,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-3 group cursor-pointer">
             <div className="w-10 h-10 flex items-center justify-center transition-all duration-500 group-hover:rotate-360 shadow-primary/20">
               {/* <Sparkles className="text-primary-foreground h-6 w-6 fill-current" /> */}
-              <Image src="/BookMyGear.svg" alt="BookMyGear" width={50} height={50} className="fill-current" />
+              <Image src="/BitSync.svg" alt="BitSync" width={50} height={50} className="fill-current" />
             </div>
             <span className="text-2xl font-black tracking-tighter italic">
               Bit<span className="text-primary">Sync</span>
@@ -89,7 +95,7 @@ export default function LandingPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
             </span>
-            V.1.2.2 • Coming soon
+            V.1.2.4 • Coming soon
           </motion.div>
 
           <motion.h1
@@ -98,8 +104,8 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-5xl sm:text-7xl md:text-9xl font-black tracking-[-0.05em] leading-[0.85] text-center mb-6 md:mb-10 selection:bg-primary selection:text-primary-foreground"
           >
-            Sync Fast. <br />
-            <span className="text-primary bg-clip-text">Grow Faster.</span>
+
+            BitSync !<br />
           </motion.h1>
 
           <motion.p
@@ -108,7 +114,7 @@ export default function LandingPage() {
             transition={{ delay: 0.2, duration: 0.8 }}
             className="text-lg sm:text-xl md:text-2xl text-muted-foreground text-center max-w-3xl mb-10 md:mb-14 font-medium leading-relaxed"
           >
-            จัดการธุรกิจของคุณด้วยระบบ POS อัจฉริยะ <br className="hidden md:block" />
+            จัดการธุรกิจของคุณด้วยระบบอัจฉริยะ <br className="hidden md:block" />
             ที่มาพร้อมกับความเร็วระดับอัลตร้า ดีไซน์ที่สวยงาม และความแม่นยำสูงสุด
           </motion.p>
 
@@ -134,16 +140,38 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, type: "spring", stiffness: 40, damping: 20 }}
-            className="relative w-full max-w-6xl group perspective-1000"
+            className="relative w-full max-w-[320px] md:max-w-[700px] lg:max-w-6xl mx-auto group perspective-1000"
           >
             <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 via-emerald-500/20 to-indigo-500/30 rounded-[3rem] blur-3xl opacity-40 group-hover:opacity-60 transition duration-1000" />
-            <div className="relative bg-card/60 border border-border/50 rounded-[2.5rem] shadow-[0_32px_120px_-20px_rgba(0,0,0,0.3)] overflow-hidden backdrop-blur-3xl transition-all duration-700 hover:rotate-x-1">
-              {/* Mockup Toolbar */}
-              <div className="bg-muted/40 border-b border-border/20 p-5 flex items-center justify-between">
+
+
+            <div className={`
+              relative bg-card overflow-hidden backdrop-blur-xl md:backdrop-blur-3xl transition-all duration-700
+              
+              /* Mobile (iPhone) */
+              rounded-[3rem] border-12 border-gray-950 shadow-2xl
+              
+              /* Tablet (iPad) */
+              md:rounded-[2.5rem] md:border-12
+              
+              /* Desktop (MacBook Screen) */
+              lg:rounded-t-[2rem] lg:rounded-b-none lg:border-16 lg:border-b-0 lg:border-gray-950 lg:shadow-none
+            `}>
+
+              {/* iPhone Notch & Camera */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 h-7 w-32 bg-gray-950 rounded-b-2xl z-20 md:hidden pointer-events-none" />
+
+              {/* MacBook Camera (Desktop Only) */}
+              <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 h-4 w-32 bg-gray-950 rounded-b-xl z-20 pointer-events-none">
+                <div className="absolute top-[30%] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-slate-800/80 border border-slate-700/50" />
+              </div>
+
+              {/* Browser Toolbar (Desktop Only) */}
+              <div className="hidden lg:flex bg-muted/40 border-b border-border/20 p-5 items-center justify-between">
                 <div className="flex gap-2">
-                  <div className="w-3.5 h-3.5 rounded-full bg-red-500/40" />
-                  <div className="w-3.5 h-3.5 rounded-full bg-yellow-500/40" />
-                  <div className="w-3.5 h-3.5 rounded-full bg-green-500/40" />
+                  <div className="w-3.5 h-3.5 rounded-full bg-red-500/80" />
+                  <div className="w-3.5 h-3.5 rounded-full bg-yellow-500/80" />
+                  <div className="w-3.5 h-3.5 rounded-full bg-green-500/80" />
                 </div>
                 <div className="bg-background/50 border border-border/20 px-6 py-1.5 rounded-full text-[12px] text-muted-foreground/60 w-1/2 text-center font-medium tracking-wide">
                   https://bitsync-iota.vercel.app/
@@ -152,8 +180,8 @@ export default function LandingPage() {
               </div>
 
               {/* Mockup Content */}
-              <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 h-full min-h-[400px] md:min-h-[500px]">
-                <div className="hidden md:block md:col-span-3 space-y-6">
+              <div className="p-6 md:p-10 grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 h-full min-h-[400px] md:min-h-[500px] bg-background">
+                <div className="hidden lg:block lg:col-span-3 space-y-6">
                   <div className="h-10 w-3/4 bg-primary/20 rounded-xl" />
                   <div className="space-y-4">
                     {[1, 2, 3, 4].map((i) => (
@@ -161,25 +189,44 @@ export default function LandingPage() {
                     ))}
                   </div>
                 </div>
-                <div className="col-span-1 md:col-span-9 space-y-8">
+                <div className="col-span-1 lg:col-span-9 space-y-8 pt-6 lg:pt-0">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                     {[1, 2, 3].map((i) => (
                       <div key={i} className="h-24 md:h-32 bg-card border border-border/20 rounded-3xl shadow-sm glass transition-transform hover:scale-105" />
                     ))}
                   </div>
                   <div className="h-48 md:h-64 w-full bg-card/40 border border-border/10 rounded-3xl shadow-lg glass flex items-end p-4 md:p-8 gap-2 md:gap-4 overflow-hidden">
-                    {[40, 70, 45, 90, 65, 80, 55, 75, 60, 85].map((h, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ height: 0 }}
-                        animate={{ height: `${h}%` }}
-                        transition={{ delay: 1 + (i * 0.1), duration: 1 }}
-                        className="flex-1 bg-linear-to-t from-primary/80 to-primary/20 rounded-t-xl transition-all hover:from-primary hover:scale-x-110"
-                      />
-                    ))}
+                    {[40, 70, 45, 90, 65, 80, 55, 75, 60, 85].map((h, i) => {
+                      const colors = [
+                        'bg-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.5)]',
+                        'bg-blue-400 shadow-[0_0_20px_rgba(96,165,250,0.5)]',
+                        'bg-orange-400 shadow-[0_0_20px_rgba(251,146,60,0.5)]',
+                        'bg-purple-400 shadow-[0_0_20px_rgba(192,132,252,0.5)]',
+                        'bg-pink-400 shadow-[0_0_20px_rgba(244,114,182,0.5)]',
+                        'bg-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]',
+                        'bg-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.5)]',
+                        'bg-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.5)]',
+                        'bg-indigo-400 shadow-[0_0_20px_rgba(129,140,248,0.5)]',
+                        'bg-rose-400 shadow-[0_0_20px_rgba(251,113,133,0.5)]'
+                      ];
+                      return (
+                        <motion.div
+                          key={i}
+                          initial={{ height: 0 }}
+                          animate={{ height: `${h}%` }}
+                          transition={{ delay: 1 + (i * 0.1), duration: 1 }}
+                          className={`flex-1 rounded-t-xl transition-all hover:scale-x-110 ${colors[i % colors.length]}`}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* MacBook Base (Desktop Only) */}
+            <div className="hidden lg:block relative mx-auto w-[120%] -translate-x-[8%] h-6 bg-gray-300 rounded-b-2xl shadow-2xl border-t border-gray-400">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-2 bg-gray-400 rounded-b-xl" />
             </div>
           </motion.div>
         </div>
@@ -207,13 +254,13 @@ export default function LandingPage() {
               icon={<BarChart3 className="h-7 w-7" />}
               title="Real-time Analytics"
               desc="สรุปยอดขายและวิเคราะห์ข้อมูลธุรกิจแบบวินาทีต่อวินาที"
-              color="bg-emerald-500"
+              color="bg-primary"
             />
             <FeatureCard
               icon={<History className="h-7 w-7" />}
               title="Safe Cloud History"
               desc="ข้อมูลทั้งหมดถูกเข้ารหัสและสำรองบนระบบ Cloud ระดับมาตรฐานโลก"
-              color="bg-indigo-600"
+              color="bg-primary"
             />
           </div>
         </div>
@@ -223,8 +270,8 @@ export default function LandingPage() {
       <footer className="py-10 md:py-20 border-t border-border/40 relative">
         <div className="max-w-7xl mx-auto px-6 md:px-8 flex flex-col md:flex-row items-center justify-between gap-10">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Sparkles className="text-primary-foreground h-5 w-5 fill-current" />
+            <div className="rounded-lg flex items-center justify-center">
+              <Image src="/BitSync.svg" alt="Logo" width={50} height={50} />
             </div>
             <span className="text-xl font-black italic tracking-tighter uppercase">
               Bit<span className="text-primary">Sync</span>
@@ -256,9 +303,6 @@ function FeatureCard({ icon, title, desc, color }: { icon: React.ReactNode, titl
       <p className="text-muted-foreground leading-relaxed font-medium mb-8">
         {desc}
       </p>
-      <div className="flex items-center text-primary font-black text-sm cursor-pointer group-hover:translate-x-2 transition-transform">
-        EXPLORE FEATURE <ArrowRight className="ml-2 h-5 w-5" />
-      </div>
     </motion.div>
   );
 }
