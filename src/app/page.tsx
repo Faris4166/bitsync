@@ -280,10 +280,6 @@ export default function LandingPage() {
           <p className="text-sm font-bold text-muted-foreground/60 tracking-widest uppercase">
             © 2026 BitSync @Faris งานส่งครู
           </p>
-          <div className="flex gap-8">
-            <span className="text-sm font-bold hover:text-primary cursor-pointer transition-colors">Privacy</span>
-            <span className="text-sm font-bold hover:text-primary cursor-pointer transition-colors">Terms</span>
-          </div>
         </div>
       </footer>
     </div>
