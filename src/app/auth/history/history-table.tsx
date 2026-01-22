@@ -44,29 +44,21 @@ type Receipt = {
     created_at: string
 }
 
+import useSWR from 'swr'
+
+// Fetcher function for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export default function HistoryTable() {
-    const [receipts, setReceipts] = useState<Receipt[]>([])
-    const [loading, setLoading] = useState(true)
+    const { data: receiptsData, error, isLoading: loading } = useSWR<Receipt[]>('/api/receipts', fetcher, {
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+    })
+
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
-    const fetchReceipts = React.useCallback(async () => {
-        try {
-            const res = await fetch('/api/receipts')
-            if (res.ok) {
-                const data = await res.json()
-                setReceipts(data)
-            }
-        } catch (err) {
-            console.error('Error fetching receipts:', err)
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
-    useEffect(() => {
-        fetchReceipts()
-    }, [fetchReceipts])
+    const receipts = receiptsData || []
 
     const columns: ColumnDef<Receipt>[] = [
         {

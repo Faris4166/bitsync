@@ -56,28 +56,23 @@ const chartConfig = {
     },
 } satisfies ChartConfig
 
+import useSWR from 'swr'
+
+// Fetcher function for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export default function Dashboard() {
-    const [receipts, setReceipts] = useState<Receipt[]>([])
-    const [isLoading, setIsLoading] = useState(true)
+    const { data: receiptsData, error, isLoading: swrLoading } = useSWR<Receipt[]>('/api/receipts', fetcher, {
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+    })
+
     const [isExporting, setIsExporting] = useState(false)
     const dashboardRef = useRef<HTMLDivElement>(null)
     const [dateRange, setDateRange] = useState('30d')
 
-    useEffect(() => {
-        const fetchReceipts = async () => {
-            try {
-                const res = await fetch('/api/receipts')
-                if (res.ok) {
-                    setReceipts(await res.json())
-                }
-            } catch (err) {
-                console.error('Fetch error:', err)
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        fetchReceipts()
-    }, [])
+    const receipts = receiptsData || []
+    const isLoading = swrLoading
 
     const isInitialLoading = isLoading && receipts.length === 0
 
