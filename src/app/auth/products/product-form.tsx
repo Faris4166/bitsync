@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, Plus, Trash2, Package, Upload, Image as ImageIcon, DollarSign, ListOrdered, Edit, AlertTriangle } from 'lucide-react'
 import { toast } from "sonner"
+import useSWR, { mutate } from 'swr'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import {
     AlertDialog,
@@ -37,11 +38,19 @@ type Product = {
     image_url: string
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export default function ProductManagement() {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
-    const [products, setProducts] = useState<Product[]>([])
-    const [isInitialLoading, setIsInitialLoading] = useState(true)
+
+    const { data: productsData, error, isLoading: isSWRLoading } = useSWR<Product[]>('/api/products', fetcher, {
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+    })
+
+    const products = productsData || []
+    const isInitialLoading = isSWRLoading && products.length === 0
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isUploading, setIsUploading] = useState(false)
 
@@ -59,24 +68,6 @@ export default function ProductManagement() {
     const [currentPage, setCurrentPage] = useState(1)
 
     // --- API Helpers ---
-
-    const fetchProducts = React.useCallback(async () => {
-        try {
-            const res = await fetch('/api/products')
-            if (res.ok) {
-                const data = await res.json()
-                setProducts(data)
-            }
-        } catch (err) {
-            console.error('Error fetching products:', err)
-        } finally {
-            setIsInitialLoading(false)
-        }
-    }, [])
-
-    React.useEffect(() => {
-        fetchProducts()
-    }, [])
 
     const handleFileUpload = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -150,13 +141,13 @@ export default function ProductManagement() {
                 setIsDialogOpen(false)
                 setNewProduct({ name: '', price: 0, quantity: 0, image_url: '' })
                 setEditingId(null)
-                await fetchProducts()
+                mutate('/api/products')
             } catch (err: any) {
                 console.error('Product Save Error Detail:', err)
                 toast.error(err.message || 'เกิดข้อผิดพลาดที่ไม่รู้จัก')
             }
         })
-    }, [newProduct, fetchProducts, editingId])
+    }, [newProduct, editingId])
 
     const handleEditClick = (product: Product) => {
         setNewProduct({
@@ -180,7 +171,7 @@ export default function ProductManagement() {
 
                 if (!res.ok) throw new Error('ลบสินค้าไม่สำเร็จ')
 
-                setProducts(prev => prev.filter(p => p.id !== deleteId))
+                mutate('/api/products')
                 toast.success('ลบสินค้าเรียบร้อย')
                 setDeleteId(null)
             } catch (err) {
@@ -359,7 +350,7 @@ export default function ProductManagement() {
                                     <img
                                         src={product.image_url}
                                         alt={product.name}
-                                        className="w-full h-full object-contain p-4 mix-blend-multiply"
+                                        className="w-full h-full object-contain p-4"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-muted-foreground/10">

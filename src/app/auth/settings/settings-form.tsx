@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Loader2, Plus, Trash2, Building2, User, CreditCard, Wallet, Upload, Image as ImageIcon, Smartphone } from 'lucide-react'
 import { toast } from "sonner"
+import useSWR, { mutate } from 'swr'
 
 // --- Types ---
 export type ProfileData = {
@@ -38,6 +39,8 @@ type Props = {
     initialPaymentMethods: any[]
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export default function SettingsForm({ initialProfile, initialPaymentMethods }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
@@ -52,7 +55,11 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
     })
 
     // Payment State
-    const [paymentMethods, setPaymentMethods] = useState<PaymentMethodData[]>(initialPaymentMethods || [])
+    const { data: paymentMethodsData } = useSWR<PaymentMethodData[]>('/api/payment-methods', fetcher, {
+        fallbackData: initialPaymentMethods,
+        revalidateOnFocus: true,
+    })
+    const paymentMethods = paymentMethodsData || []
     const [showAddPayment, setShowAddPayment] = useState(false)
     const [newPayment, setNewPayment] = useState<PaymentMethodData>({
         type: 'promptpay',
@@ -64,8 +71,8 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
         is_active: true
     })
 
-    // Sync state with props when they change (e.g. after router.refresh())
     React.useEffect(() => {
+        // Sync profile when props change
         setProfile({
             full_name: initialProfile?.full_name || '',
             phone: initialProfile?.phone || '',
@@ -74,10 +81,6 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
             shop_logo_url: initialProfile?.shop_logo_url || ''
         })
     }, [initialProfile])
-
-    React.useEffect(() => {
-        setPaymentMethods(initialPaymentMethods || [])
-    }, [initialPaymentMethods])
 
     // --- API Helpers ---
 
@@ -126,17 +129,6 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
         }
     }, [])
 
-    const fetchPaymentMethods = React.useCallback(async () => {
-        try {
-            const res = await fetch('/api/payment-methods')
-            if (res.ok) {
-                const data = await res.json()
-                setPaymentMethods(data)
-            }
-        } catch (err) {
-            console.error('Error fetching payment methods:', err)
-        }
-    }, [])
 
     // --- Handlers ---
 
@@ -187,7 +179,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                     is_active: true
                 })
 
-                await fetchPaymentMethods()
+                mutate('/api/payment-methods')
                 router.refresh()
                 toast.success('เพิ่มช่องทางชำระเงินเรียบร้อย')
             } catch (err) {
@@ -195,7 +187,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                 toast.error('เกิดข้อผิดพลาดในการเพิ่มช่องทางชำระเงิน')
             }
         })
-    }, [newPayment, fetchPaymentMethods, router])
+    }, [newPayment, router])
 
     const handleDeletePayment = React.useCallback(async (id: string) => {
         if (!confirm('ยืนยันการลบช่องทางชำระเงิน?')) return
@@ -208,7 +200,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
 
                 if (!res.ok) throw new Error('Failed to delete')
 
-                setPaymentMethods(prev => prev.filter(p => p.id !== id))
+                mutate('/api/payment-methods')
                 router.refresh()
                 toast.success('ลบช่องทางชำระเงินเรียบร้อย')
             } catch (err) {

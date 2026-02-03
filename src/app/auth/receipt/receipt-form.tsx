@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Plus, Trash2, Receipt, User, Phone, Package, Wallet, Check, ChevronRight, Loader2, ChevronsUpDown } from 'lucide-react'
 import { toast } from 'sonner'
+import useSWR from 'swr'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from "@/lib/utils"
 import {
@@ -41,12 +42,18 @@ type PaymentMethod = {
     account_name?: string
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export default function ReceiptForm() {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
-    const [products, setProducts] = useState<Product[]>([])
-    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
-    const [existingCustomers, setExistingCustomers] = useState<{ name: string, phone: string }[]>([])
+    const { data: productsData } = useSWR<Product[]>('/api/products', fetcher)
+    const { data: paymentMethodsData } = useSWR<PaymentMethod[]>('/api/payment-methods', fetcher)
+    const { data: customersData } = useSWR<{ name: string, phone: string }[]>('/api/customers', fetcher)
+
+    const products = productsData || []
+    const paymentMethods = paymentMethodsData || []
+    const existingCustomers = customersData || []
 
     // Receipt State
     const [customer, setCustomer] = useState({ name: '', phone: '' })
@@ -56,31 +63,19 @@ export default function ReceiptForm() {
     const [selectedPayments, setSelectedPayments] = useState<string[]>([])
 
     useEffect(() => {
-        const fetchData = async () => {
-            const [pRes, pmRes, cRes] = await Promise.all([
-                fetch('/api/products'),
-                fetch('/api/payment-methods'),
-                fetch('/api/customers')
-            ])
-            if (pRes.ok) setProducts(await pRes.json())
-            if (pmRes.ok) setPaymentMethods(await pmRes.json())
-            if (cRes.ok) setExistingCustomers(await cRes.json())
-
-            // Load draft from session storage if exists
-            const savedDraft = sessionStorage.getItem('receipt_draft')
-            if (savedDraft) {
-                try {
-                    const draft = JSON.parse(savedDraft)
-                    setCustomer({ name: draft.customer_name, phone: draft.customer_phone })
-                    setSelectedItems(draft.items || [])
-                    setLaborCost(draft.labor_cost || 0)
-                    setSelectedPayments(draft.payment_info?.selected_ids || [])
-                } catch (e) {
-                    console.error('Error parsing draft:', e)
-                }
+        // Load draft from session storage if exists
+        const savedDraft = sessionStorage.getItem('receipt_draft')
+        if (savedDraft) {
+            try {
+                const draft = JSON.parse(savedDraft)
+                setCustomer({ name: draft.customer_name, phone: draft.customer_phone })
+                setSelectedItems(draft.items || [])
+                setLaborCost(draft.labor_cost || 0)
+                setSelectedPayments(draft.payment_info?.selected_ids || [])
+            } catch (e) {
+                console.error('Error parsing draft:', e)
             }
         }
-        fetchData()
     }, [])
 
     const addItem = React.useCallback(() => {

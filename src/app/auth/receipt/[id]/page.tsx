@@ -12,6 +12,7 @@ import {
     Smartphone,
     Landmark
 } from 'lucide-react'
+import useSWR from 'swr'
 import { QRCodeCanvas } from 'qrcode.react'
 import generatePayload from 'promptpay-qr'
 import Link from 'next/link'
@@ -51,36 +52,21 @@ type PaymentMethod = {
 
 const ITEMS_PER_PAGE = 15
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 
 export default function ReceiptDetail() {
     const { id } = useParams()
     const router = useRouter()
     const containerRef = useRef<HTMLDivElement>(null)
 
-    const [receipt, setReceipt] = useState<Receipt | null>(null)
-    const [profile, setProfile] = useState<Profile | null>(null)
-    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
-    const [isLoading, setIsLoading] = useState(true)
+    const { data: receipt, isLoading: receiptLoading } = useSWR<Receipt>(id ? `/api/receipts?id=${id}` : null, fetcher)
+    const { data: profile } = useSWR<Profile>('/api/profile', fetcher)
+    const { data: paymentMethodsData } = useSWR<PaymentMethod[]>('/api/payment-methods', fetcher)
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [rRes, pRes, pmRes] = await Promise.all([
-                    fetch(`/api/receipts?id=${id}`),
-                    fetch('/api/profile'),
-                    fetch('/api/payment-methods')
-                ])
-                if (rRes.ok) setReceipt(await rRes.json())
-                if (pRes.ok) setProfile(await pRes.json())
-                if (pmRes.ok) setPaymentMethods(await pmRes.json())
-            } catch (err) {
-                toast.error('ไม่สามารถโหลดข้อมูลใบเสร็จได้')
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        fetchData()
-    }, [id])
+    const paymentMethods = paymentMethodsData || []
+    const isLoading = receiptLoading && !receipt
+
 
     const selectedPaymentMethods = React.useMemo(() => paymentMethods.filter(pm =>
         receipt?.payment_info?.selected_ids?.includes(pm.id)
