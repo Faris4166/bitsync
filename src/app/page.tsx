@@ -12,6 +12,7 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-primary relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(var(--primary-rgb),0.05),transparent_50%)] pointer-events-none" />
       {/* --- Navbar --- */}
       <nav className="fixed top-0 w-full z-50 border-b border-border/40 glass">
         <div className="flex items-center justify-between px-4 md:px-8 py-4 max-w-7xl mx-auto">

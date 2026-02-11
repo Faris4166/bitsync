@@ -24,7 +24,7 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                             repeat: Infinity,
                             ease: "linear",
                         }}
-                        className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/10 rounded-full blur-[80px] lg:blur-[120px] will-change-transform"
+                        className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/20 dark:bg-primary/30 rounded-full blur-[80px] lg:blur-[120px] opacity-70 dark:opacity-50"
                     />
                     <motion.div
                         animate={{
@@ -37,7 +37,7 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                             repeat: Infinity,
                             ease: "linear",
                         }}
-                        className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[60px] lg:blur-[100px] will-change-transform"
+                        className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] bg-emerald-500/20 dark:bg-emerald-500/30 rounded-full blur-[60px] lg:blur-[100px] opacity-70 dark:opacity-40"
                     />
                 </div>
             </div>
@@ -98,12 +98,12 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                         transition={{ delay: 0.6, type: "spring", stiffness: 40, damping: 20 }}
                         className="relative w-full max-w-[320px] md:max-w-[700px] lg:max-w-6xl mx-auto group perspective-1000"
                     >
-                        <div className="absolute -inset-4 bg-linear-to-r from-primary/30 via-emerald-500/20 to-indigo-500/30 rounded-[3rem] blur-3xl opacity-40 group-hover:opacity-60 transition duration-1000" />
+                        <div className="absolute -inset-4 bg-linear-to-r from-primary/40 via-emerald-500/30 to-indigo-500/40 rounded-[3rem] blur-3xl opacity-50 dark:opacity-60 group-hover:opacity-80 transition duration-1000" />
                         <div className={`
-              relative bg-card overflow-hidden backdrop-blur-xl md:backdrop-blur-3xl transition-all duration-700
-              rounded-[3rem] border-12 border-gray-950 shadow-2xl
+              relative bg-card dark:bg-black/80 overflow-hidden backdrop-blur-xl md:backdrop-blur-3xl transition-all duration-700
+              rounded-[3rem] border-12 border-gray-950 shadow-2xl dark:shadow-[0_0_50px_-12px_rgba(31,38,135,0.37)]
               md:rounded-[2.5rem] md:border-12
-              lg:rounded-t-[2rem] lg:rounded-b-none lg:border-16 lg:border-b-0 lg:border-gray-950 lg:shadow-none
+              lg:rounded-t-[2rem] lg:rounded-b-none lg:border-16 lg:border-b-0 lg:border-gray-950 dark:lg:border-gray-900 lg:shadow-none
             `}>
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 h-7 w-32 bg-gray-950 rounded-b-2xl z-20 md:hidden pointer-events-none" />
                             <div className="hidden lg:block absolute top-0 left-1/2 -translate-x-1/2 h-4 w-32 bg-gray-950 rounded-b-xl z-20 pointer-events-none">
@@ -120,12 +120,12 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                                 </div>
                                 <div className="w-10" />
                             </div>
-                            <div className="p-6 md:p-10 grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 h-full min-h-[400px] md:min-h-[500px] bg-background">
+                            <div className="p-6 md:p-10 grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 h-full min-h-[400px] md:min-h-[500px] bg-background dark:bg-neutral-950">
                                 <div className="hidden lg:block lg:col-span-3 space-y-6">
-                                    <div className="h-10 w-3/4 bg-primary/20 rounded-xl" />
+                                    <div className="h-10 w-3/4 bg-primary/20 dark:bg-primary/30 rounded-xl" />
                                     <div className="space-y-4">
                                         {[1, 2, 3, 4].map((i) => (
-                                            <div key={i} className="h-12 w-full bg-muted/30 rounded-2xl border border-border/20" />
+                                            <div key={i} className="h-12 w-full bg-muted/30 dark:bg-white/5 rounded-2xl border border-border/20 dark:border-white/10" />
                                         ))}
                                     </div>
                                 </div>
@@ -163,8 +163,8 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                                 </div>
                             </div>
                         </div>
-                        <div className="hidden lg:block relative mx-auto w-[120%] -translate-x-[8%] h-6 bg-gray-300 rounded-b-2xl shadow-2xl border-t border-gray-400">
-                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-2 bg-gray-400 rounded-b-xl" />
+                        <div className="hidden lg:block relative mx-auto w-[120%] -translate-x-[8%] h-6 bg-gray-300 dark:bg-gray-800 rounded-b-2xl shadow-2xl border-t border-gray-400 dark:border-gray-700">
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-2 bg-gray-400 dark:bg-gray-700 rounded-b-xl" />
                         </div>
                     </motion.div>
                 </div>

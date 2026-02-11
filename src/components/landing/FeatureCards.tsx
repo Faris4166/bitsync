@@ -33,9 +33,9 @@ function FeatureCard({ icon, title, desc, color }: { icon: React.ReactNode, titl
     return (
         <motion.div
             whileHover={{ y: -10 }}
-            className="group p-10 rounded-[2.5rem] glass border border-border/40 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5"
+            className="group p-10 rounded-[2.5rem] glass border border-border/40 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 dark:hover:shadow-primary/10 dark:bg-black/20"
         >
-            <div className={`${color} w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-8 shadow-xl shadow-current/30 group-hover:scale-110 transition-transform duration-500 shadow-${color}/20`}>
+            <div className={`${color} w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-8 shadow-xl shadow-current/30 group-hover:scale-110 transition-transform duration-500 shadow-${color}/20 dark:shadow-primary/40`}>
                 {icon}
             </div>
             <h3 className="text-2xl font-black mb-4 tracking-tight group-hover:text-primary transition-colors">{title}</h3>

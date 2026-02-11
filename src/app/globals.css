@@ -129,7 +129,11 @@
   }
 
   .glass {
-    @apply bg-(--glass-background) border-(--glass-border) backdrop-blur-sm;
+    @apply bg-(--glass-background) border-(--glass-border) backdrop-blur-md;
+  }
+
+  .dark .glass {
+    @apply bg-black/40 border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)];
   }
 
   ::-webkit-scrollbar {
