@@ -193,11 +193,13 @@ export default function ProductManagement() {
     }
 
     return (
-        <div className="w-full max-w-6xl mx-auto space-y-8">
-            <div className="flex items-center justify-between">
+        <div className="w-full max-w-6xl mx-auto space-y-6">
+            <div className="flex items-center justify-between border-b border-border/20 pb-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">รายการสินค้า</h1>
-                    <p className="text-muted-foreground font-medium mt-1 text-sm">จัดการรายการสินค้าในคลังของคุณ</p>
+                    <h1 className="text-2xl font-black italic tracking-tight text-foreground uppercase">
+                        Product <span className="text-primary italic">Inventory</span>
+                    </h1>
+                    <p className="text-muted-foreground font-medium mt-0.5 text-[11px] uppercase tracking-wider">Manage your items and stock levels</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={(open) => {
                     setIsDialogOpen(open)
@@ -342,58 +344,58 @@ export default function ProductManagement() {
                     <p className="text-muted-foreground/60 text-sm max-w-xs mx-auto">เริ่มต้นด้วยการเพิ่มสินค้าชิ้นแรกของคุณเพื่อนำไปออกใบเสร็จ</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {currentProducts.map(product => (
-                        <Card key={product.id} className="group relative overflow-hidden rounded-lg border border-border/60 shadow-none hover:border-primary/50 transition-all duration-300 bg-card">
-                            <div className="aspect-square w-full relative overflow-hidden bg-muted/5 border-b border-border/60">
+                        <Card key={product.id} className="group relative overflow-hidden rounded-lg border border-border/40 shadow-none hover:border-primary/40 transition-all duration-300 bg-card">
+                            <div className="aspect-4/3 w-full relative overflow-hidden bg-muted/5 border-b border-border/40">
                                 {product.image_url ? (
                                     <img
                                         src={product.image_url}
                                         alt={product.name}
-                                        className="w-full h-full object-contain p-4"
+                                        className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/10">
-                                        <Package className="h-16 w-16" />
+                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/5">
+                                        <Package className="h-8 w-8" />
                                     </div>
                                 )}
 
                                 {/* Status Badge */}
-                                <div className="absolute top-2 left-2">
-                                    <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-sm border ${product.quantity > 0 ? 'bg-background/80 text-foreground/70 border-border/50' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>
+                                <div className="absolute top-1.5 left-1.5">
+                                    <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-sm border ${product.quantity > 0 ? 'bg-background/95 text-foreground/80 border-border/40 backdrop-blur-md shadow-sm' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>
                                         {product.quantity > 0 ? `Stock: ${product.quantity}` : 'Out of Stock'}
                                     </span>
                                 </div>
                             </div>
 
-                            <CardContent className="p-4 space-y-3">
+                            <CardContent className="p-3 space-y-1.5">
                                 <div>
-                                    <h3 className="font-semibold text-sm leading-tight text-foreground truncate" title={product.name}>{product.name}</h3>
-                                    <p className="text-xs text-muted-foreground mt-1">รหัส: {product.id?.substring(0, 8).toUpperCase()}</p>
+                                    <h3 className="font-bold text-[13px] leading-tight text-foreground truncate" title={product.name}>{product.name}</h3>
+                                    <p className="text-[9px] text-muted-foreground mt-0.5 uppercase tracking-wider font-medium">ID: {product.id?.substring(0, 8).toUpperCase()}</p>
                                 </div>
 
-                                <div className="flex items-end justify-between pt-2 border-t border-border/40">
-                                    <p className="text-lg font-bold text-primary font-mono tracking-tight">
+                                <div className="flex items-center justify-between pt-1.5 border-t border-border/30">
+                                    <p className="text-base font-black text-primary font-mono tracking-tighter">
                                         ฿{product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                     </p>
 
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-7 w-7 rounded-md hover:bg-primary/10 hover:text-primary"
+                                            className="h-6 w-6 rounded-md hover:bg-primary/10 hover:text-primary"
                                             onClick={() => handleEditClick(product)}
                                         >
-                                            <Edit className="h-3.5 w-3.5" />
+                                            <Edit className="h-3 w-3" />
                                         </Button>
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-7 w-7 rounded-md hover:bg-destructive/10 hover:text-destructive"
+                                            className="h-6 w-6 rounded-md hover:bg-destructive/10 hover:text-destructive"
                                             onClick={() => setDeleteId(product.id!)}
                                             disabled={isPending}
                                         >
-                                            <Trash2 className="h-3.5 w-3.5" />
+                                            <Trash2 className="h-3 w-3" />
                                         </Button>
                                     </div>
                                 </div>
