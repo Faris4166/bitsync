@@ -37,7 +37,7 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                             repeat: Infinity,
                             ease: "linear",
                         }}
-                        className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] bg-emerald-500/20 dark:bg-emerald-500/30 rounded-full blur-[60px] lg:blur-[100px] opacity-70 dark:opacity-40"
+                        className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] bg-primary/20 dark:bg-primary/30 rounded-full blur-[60px] lg:blur-[100px] opacity-70 dark:opacity-40"
                     />
                 </div>
             </div>
@@ -84,8 +84,9 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                         <SignUpButton mode="modal" forceRedirectUrl="/auth/home">
                             <Button
                                 size="lg"
-                                className="h-16 md:h-20 px-8 md:px-12 rounded-[1.5rem] md:rounded-[2rem] bg-primary hover:bg-primary/90 text-white text-lg md:text-xl font-black shadow-2xl shadow-primary/30 transition-all duration-300 hover:scale-105 active:scale-95 group border-none"
+                                className="h-16 md:h-20 px-8 md:px-12 rounded-[1.5rem] md:rounded-[2rem] bg-primary hover:bg-primary/90 text-white text-lg md:text-xl font-black shadow-2xl shadow-primary/30 dark:shadow-primary/50 transition-all duration-300 hover:scale-105 active:scale-95 group border-none relative overflow-hidden"
                             >
+                                <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                 เริ่มใช้งานฟรีตอนนี้
                                 <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-2 transition-transform" />
                             </Button>
@@ -98,7 +99,7 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                         transition={{ delay: 0.6, type: "spring", stiffness: 40, damping: 20 }}
                         className="relative w-full max-w-[320px] md:max-w-[700px] lg:max-w-6xl mx-auto group perspective-1000"
                     >
-                        <div className="absolute -inset-4 bg-linear-to-r from-primary/40 via-emerald-500/30 to-indigo-500/40 rounded-[3rem] blur-3xl opacity-50 dark:opacity-60 group-hover:opacity-80 transition duration-1000" />
+                        <div className="absolute -inset-4 bg-linear-to-r from-primary/40 via-red-500/30 to-rose-500/40 rounded-[3rem] blur-3xl opacity-50 dark:opacity-60 group-hover:opacity-80 transition duration-1000" />
                         <div className={`
               relative bg-card dark:bg-black/80 overflow-hidden backdrop-blur-xl md:backdrop-blur-3xl transition-all duration-700
               rounded-[3rem] border-12 border-gray-950 shadow-2xl dark:shadow-[0_0_50px_-12px_rgba(31,38,135,0.37)]
