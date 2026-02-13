@@ -29,11 +29,16 @@ import {
     LayoutGrid,
     Save,
     DollarSign,
-    AlertTriangle
+    AlertTriangle,
+    Activity,
+    Target,
+    Sparkles,
+    Trash2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import DashboardEditor from './dashboard-editor'
+import { generateTradingInsight } from '@/app/actions/ai'
 import {
     Sheet,
     SheetContent,
@@ -56,7 +61,14 @@ import {
     Cell,
     Label as RechartsLabel,
     Bar,
-    BarChart
+    BarChart,
+    Radar,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    RadialBar,
+    RadialBarChart
 } from 'recharts'
 import { Responsive, WidthProvider } from 'react-grid-layout/legacy'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart'
@@ -75,14 +87,14 @@ export type Receipt = {
     created_at: string
 }
 
-export type ChartType = 'area' | 'bar' | 'pie' | 'line' | 'stat'
+export type ChartType = 'area' | 'bar' | 'pie' | 'line' | 'stat' | 'radar' | 'radial'
 
 export type DashboardItem = {
     id: string
     type: ChartType
     title: string
     color: string
-    metric: 'total' | 'products' | 'labor' | 'count' | 'aov' | 'retention' | 'low_stock' | 'peak_hours'
+    metric: 'total' | 'products' | 'labor' | 'count' | 'aov' | 'retention' | 'low_stock' | 'peak_hours' | 'inventory_value' | 'category'
     x: number
     y: number
     w: number
@@ -394,7 +406,7 @@ export default function Dashboard() {
                         <Button
                             variant="outline"
                             onClick={() => setIsEditMode(true)}
-                            className="rounded-xl h-10 border-border shadow-sm font-bold gap-2"
+                            className="rounded-xl h-10 border-border shadow-sm font-bold gap-2 relative z-30"
                         >
                             <Settings2 className="h-4 w-4" /> Customize Dashboard
                         </Button>
@@ -435,6 +447,12 @@ export default function Dashboard() {
                     <Button variant="secondary" size="sm" onClick={() => addItem('pie')} className="rounded-lg gap-2 border border-border">
                         <PieChartIcon className="h-4 w-4" /> Add Pie Chart
                     </Button>
+                    <Button variant="secondary" size="sm" onClick={() => addItem('radar')} className="rounded-lg gap-2 border border-border">
+                        <Activity className="h-4 w-4" /> Add Radar Chart
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => addItem('radial')} className="rounded-lg gap-2 border border-border">
+                        <Target className="h-4 w-4" /> Add Radial Chart
+                    </Button>
                 </div>
             )}
 
@@ -452,6 +470,7 @@ export default function Dashboard() {
                 </div>
             ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <AiInsightCard receipts={receipts} products={productsData} language={language} />
                     <ResponsiveGridLayout
                         className="layout"
                         layouts={{ lg: layout.map(i => ({ i: i.id, x: i.x, y: i.y, w: i.w, h: i.h })) }}
@@ -555,8 +574,8 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             }
 
             return [
-                { date: getMonthLabel(m1), value: totals[0], fill: item.color },
-                { date: getMonthLabel(m2), value: totals[1], fill: `${item.color}80` }
+                { label: getMonthLabel(m1), value: totals[0], fill: item.color },
+                { label: getMonthLabel(m2), value: totals[1], fill: `${item.color}80` }
             ]
         }
 
@@ -576,15 +595,49 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             })
 
             return Object.entries(productTotals)
-                .map(([name, value]) => ({ date: name, value }))
+                .map(([name, value]) => ({ label: name, value }))
                 .sort((a, b) => b.value - a.value)
                 .slice(0, 5)
+        }
+
+        if (item.metric === 'category' || item.type === 'radar') {
+            const categoryTotals: Record<string, number> = {}
+            receipts.forEach(r => {
+                const items = (r as any).items || []
+                if (Array.isArray(items)) {
+                    items.forEach((p: any) => {
+                        const cat = p.category || (language === 'th' ? 'อื่นๆ' : 'Other')
+                        const val = (Number(p.quantity) || 1) * (Number(p.price) || 0)
+                        categoryTotals[cat] = (categoryTotals[cat] || 0) + val
+                    })
+                }
+            })
+            const result = Object.entries(categoryTotals)
+                .map(([name, value]) => ({ label: name, value }))
+                .sort((a, b) => b.value - a.value)
+
+            return item.type === 'radar' ? result.slice(0, 6) : result
+        }
+
+        if (item.type === 'radial') {
+            // For radial, we show progress vs a monthly target
+            const currentMonthRevenue = receipts
+                .filter(r => new Date(r.created_at).getMonth() === new Date().getMonth())
+                .reduce((sum, r) => sum + Number(r.total_amount), 0)
+
+            const target = 500000 // Sample target, could be configurable
+            const percentage = Math.min(100, Math.round((currentMonthRevenue / target) * 100))
+
+            return [
+                { label: 'Progress', value: percentage, fill: item.color },
+                { label: 'Remaining', value: 100 - percentage, fill: `${item.color}20` }
+            ]
         }
 
         if (item.metric === 'low_stock') {
             return products
                 .filter(p => (p.track_stock !== false) && (p.quantity <= 5))
-                .map(p => ({ date: p.name, value: p.quantity }))
+                .map(p => ({ label: p.name, value: p.quantity }))
                 .sort((a, b) => a.value - b.value)
                 .slice(0, 10)
         }
@@ -597,17 +650,17 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
 
             receipts.forEach(r => {
                 const date = new Date(r.created_at)
-                const label = isLongRange
+                const labelStr = isLongRange
                     ? date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { month: 'short', year: '2-digit' })
                     : date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' })
 
-                if (!groups[label]) groups[label] = [0, 0]
-                groups[label][0] += Number(r.total_amount)
-                groups[label][1] += 1
+                if (!groups[labelStr]) groups[labelStr] = [0, 0]
+                groups[labelStr][0] += Number(r.total_amount)
+                groups[labelStr][1] += 1
             })
 
-            return Object.entries(groups).map(([date, [sum, count]]) => ({
-                date,
+            return Object.entries(groups).map(([label, [sum, count]]) => ({
+                label,
                 value: count > 0 ? sum / count : 0
             }))
         }
@@ -625,7 +678,12 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                 if (hours[label] !== undefined) hours[label] += 1
             })
 
-            return Object.entries(hours).map(([date, value]) => ({ date, value }))
+            return Object.entries(hours).map(([label, value]) => ({ label, value }))
+        }
+
+        if (item.metric === 'inventory_value') {
+            const total = products.reduce((sum, p) => sum + (Number(p.price) * Number(p.quantity)), 0)
+            return [{ label: t('dashboard.inventory_value'), value: total }]
         }
 
         if (item.metric === 'retention') {
@@ -644,8 +702,8 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             })
 
             return [
-                { date: t('dashboard.returning_customers'), value: counts.returning, fill: item.color },
-                { date: t('dashboard.new_customers'), value: counts.new, fill: `${item.color}40` }
+                { label: t('dashboard.returning_customers'), value: counts.returning, fill: item.color },
+                { label: t('dashboard.new_customers'), value: counts.new, fill: `${item.color}40` }
             ]
         }
 
@@ -693,7 +751,7 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             }
         })
 
-        return Object.entries(groups).map(([date, value]) => ({ date, value }))
+        return Object.entries(groups).map(([label, value]) => ({ label, value }))
     }, [receipts, dateRange, language, item])
 
     const totalValue = data.reduce((sum, d) => sum + d.value, 0)
@@ -711,7 +769,9 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                 item.metric === 'labor' ? <Wrench className="h-5 w-5" /> :
                     item.metric === 'aov' ? <DollarSign className="h-5 w-5" /> :
                         item.metric === 'retention' ? <Users className="h-5 w-5" /> :
-                            item.metric === 'low_stock' ? <AlertTriangle className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />
+                            item.metric === 'category' ? <PieChartIcon className="h-5 w-5" /> :
+                                item.metric === 'inventory_value' ? <Package className="h-5 w-5" /> :
+                                    item.metric === 'low_stock' ? <AlertTriangle className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />
 
         let displayValue: any = totalValue
         if (item.metric === 'aov') {
@@ -720,6 +780,8 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             displayValue = count > 0 ? (totalRevenue / count) : 0
         } else if (item.metric === 'low_stock') {
             displayValue = products.filter(p => (p.track_stock !== false) && (p.quantity <= 5)).length
+        } else if (item.metric === 'inventory_value') {
+            displayValue = products.reduce((sum, p) => sum + (Number(p.price) * Number(p.quantity)), 0)
         } else if (item.metric === 'retention') {
             const customerMap: Record<string, number> = {}
             receipts.forEach(r => {
@@ -732,26 +794,27 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
         }
 
         return (
-            <Card className="h-full rounded-2xl border border-primary/10 shadow-sm bg-card/40 backdrop-blur-xs group overflow-hidden stat-card transition-all hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
-                <CardHeader className="flex flex-row items-center justify-between pb-1 space-y-0 px-4 pt-4">
-                    <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70 truncate mr-2">{item.title}</CardTitle>
-                    <div className="p-2 rounded-xl group-hover:scale-110 transition-transform shadow-xs" style={{ backgroundColor: `${item.color}15`, color: item.color }}>
-                        {React.cloneElement(icon as React.ReactElement<any>, { className: "h-3.5 w-3.5" })}
+            <Card className="h-full rounded-2xl border border-primary/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] bg-card/60 backdrop-blur-md group overflow-hidden stat-card transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/40 hover:-translate-y-1 relative">
+                <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 px-5 pt-5 relative z-10">
+                    <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80 truncate mr-2">{item.title}</CardTitle>
+                    <div className="p-2.5 rounded-xl group-hover:scale-110 transition-transform shadow-xs" style={{ backgroundColor: `${item.color}15`, color: item.color }}>
+                        {React.cloneElement(icon as React.ReactElement<any>, { className: "h-4 w-4" })}
                     </div>
                 </CardHeader>
-                <CardContent className="px-4 pb-4">
-                    <div className="text-xl font-black tracking-tight flex items-baseline gap-1">
+                <CardContent className="px-5 pb-5">
+                    <div className="text-3xl font-black tracking-tighter flex items-baseline gap-1">
                         {item.metric === 'count' || item.metric === 'low_stock' ? displayValue :
                             item.metric === 'retention' ? displayValue :
-                                <><span className="text-xs font-bold opacity-50">฿</span>{Number(displayValue).toLocaleString(undefined, { maximumFractionDigits: 0 })}</>}
+                                <><span className="text-sm font-bold opacity-40">฿</span>{Number(displayValue).toLocaleString(undefined, { maximumFractionDigits: 0 })}</>}
                     </div>
                     {item.metric === 'total' && (
-                        <div className="flex items-center gap-1.5 mt-1.5">
-                            <div className="px-1.5 py-0.5 rounded-sm bg-emerald-500/10 text-[9px] font-bold text-emerald-600 flex items-center gap-1">
-                                <TrendingUp className="h-2.5 w-2.5" />
+                        <div className="flex items-center gap-2 mt-2">
+                            <div className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-[11px] font-bold text-emerald-600 flex items-center gap-1.5">
+                                <TrendingUp className="h-3 w-3" />
                                 LIVE
                             </div>
-                            <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
+                            <span className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
                                 {receipts.length} {t('dashboard.receipt_count')}
                             </span>
                         </div>
@@ -762,15 +825,21 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
     }
 
     if (item.type === 'pie') {
-        const pieData = [
-            { name: t('dashboard.products'), value: receipts.reduce((sum, r) => sum + Number(r.subtotal), 0), fill: item.color },
-            { name: t('dashboard.labor'), value: receipts.reduce((sum, r) => sum + Number(r.labor_cost), 0), fill: `${item.color}80` },
-        ]
+        let pieData = data.map((d: any) => ({ name: d.label, value: d.value, fill: d.fill || item.color }))
+
+        // If simple timeline data or single value, show a meaningful split or the data itself
+        if (pieData.length > 5 || (pieData.length === 0 && receipts.length > 0)) {
+            // Fallback to Products vs Labor split if the metric doesn't slice well naturally
+            pieData = [
+                { name: t('dashboard.products'), value: receipts.reduce((sum, r) => sum + Number(r.subtotal), 0), fill: item.color },
+                { name: t('dashboard.labor'), value: receipts.reduce((sum, r) => sum + Number(r.labor_cost), 0), fill: `${item.color}80` },
+            ]
+        }
 
         return (
             <Card className="h-full rounded-2xl border border-primary/10 shadow-sm bg-card/50 backdrop-blur-xs overflow-hidden flex flex-col group transition-all hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
-                <CardHeader className="border-b border-border/20 bg-muted/5 py-2.5 px-3 flex-row items-center justify-between space-y-0">
-                    <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 flex items-center gap-2">
+                <CardHeader className="border-b border-border/20 bg-muted/5 py-3 px-4 flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80 flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
                         {item.title}
                     </CardTitle>
@@ -826,16 +895,79 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/10" />
-                                <XAxis dataKey="date" hide />
+                                <XAxis dataKey="label" hide />
                                 <YAxis hide />
                                 <ChartTooltip content={<ChartTooltipContent className="rounded-xl border-border shadow-2xl backdrop-blur-md bg-card/80" />} />
                                 <Area type="monotone" dataKey="value" stroke={item.color} strokeWidth={3} fillOpacity={1} fill={`url(#grad-${item.id})`} />
                             </AreaChart>
+                        ) : item.type === 'radar' ? (
+                            <RadarChart data={data} cx="50%" cy="50%" outerRadius="80%" className="transition-transform duration-1000">
+                                <PolarGrid strokeDasharray="3 3" className="stroke-muted/30" />
+                                <PolarAngleAxis dataKey="label" tick={{ fill: 'var(--color-muted-foreground)', fontSize: 8, fontWeight: 700 }} />
+                                <PolarRadiusAxis angle={30} domain={[0, 'auto']} hide />
+                                <ChartTooltip content={<ChartTooltipContent className="rounded-xl border-border shadow-2xl backdrop-blur-md bg-card/80" />} />
+                                <Radar
+                                    name={item.title}
+                                    dataKey="value"
+                                    stroke={item.color}
+                                    fill={item.color}
+                                    fillOpacity={0.4}
+                                    className="animate-in fade-in zoom-in-50 duration-1000"
+                                />
+                            </RadarChart>
+                        ) : item.type === 'radial' ? (
+                            <RadialBarChart
+                                data={data}
+                                innerRadius="60%"
+                                outerRadius="100%"
+                                barSize={15}
+                                startAngle={90}
+                                endAngle={450}
+                            >
+                                <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+                                <RadialBar
+                                    background
+                                    dataKey="value"
+                                    cornerRadius={10}
+                                    label={{ position: 'insideStart', fill: '#fff', fontSize: 10, fontWeight: 'bold' }}
+                                />
+                                <ChartTooltip content={<ChartTooltipContent hideLabel className="rounded-xl border-border shadow-2xl backdrop-blur-md bg-card/80" />} />
+                                <RechartsLabel
+                                    content={({ viewBox }) => {
+                                        if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                                            const progress = (data[0] as any).value
+                                            return (
+                                                <text
+                                                    x={viewBox.cx}
+                                                    y={viewBox.cy}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                >
+                                                    <tspan
+                                                        x={viewBox.cx}
+                                                        y={viewBox.cy}
+                                                        className="fill-foreground text-2xl font-black"
+                                                    >
+                                                        {progress}%
+                                                    </tspan>
+                                                    <tspan
+                                                        x={viewBox.cx}
+                                                        y={(viewBox.cy || 0) + 20}
+                                                        className="fill-muted-foreground text-[10px] font-bold uppercase"
+                                                    >
+                                                        Goal
+                                                    </tspan>
+                                                </text>
+                                            )
+                                        }
+                                    }}
+                                />
+                            </RadialBarChart>
                         ) : (item.type === 'bar' || item.compareType === 'month' || item.compareType === 'products') ? (
-                            <BarChart data={data} margin={{ left: 0, right: 0, top: 10, bottom: 10 }}>
+                            <BarChart data={data} margin={{ left: 10, right: 10, top: 20, bottom: 20 }}>
                                 <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/20" />
                                 <XAxis
-                                    dataKey="date"
+                                    dataKey="label"
                                     hide={false}
                                     tick={{ fill: 'var(--color-muted-foreground)', fontSize: 9, fontWeight: 500 }}
                                     interval={0}
@@ -859,13 +991,91 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                         ) : (
                             <AreaChart data={data} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
                                 <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/20" />
-                                <XAxis dataKey="date" hide />
+                                <XAxis dataKey="label" hide />
                                 <YAxis hide />
-                                <ChartTooltip content={<ChartTooltipContent />} />
+                                <ChartTooltip content={<ChartTooltipContent className="rounded-xl border-border shadow-2xl backdrop-blur-md bg-card/80" />} />
                                 <Area type="linear" dataKey="value" stroke={item.color} strokeWidth={2.5} fill="transparent" />
                             </AreaChart>
                         )}
                     </ChartContainer>
+                )}
+            </CardContent>
+        </Card>
+    )
+}
+
+function AiInsightCard({ receipts, products, language }: { receipts: any[], products: any[], language: string }) {
+    const { t } = useLanguage()
+    const [insight, setInsight] = useState<string>('')
+    const [loading, setLoading] = useState(false)
+
+    const handleGenerateInsight = async () => {
+        setLoading(true)
+        const summary = {
+            totalRevenue: receipts.reduce((sum, r) => sum + Number(r.total_amount), 0),
+            totalReceipts: receipts.length,
+            topProducts: products.sort((a, b) => b.quantity - a.quantity).slice(0, 3).map(p => p.name)
+        }
+        const result = await generateTradingInsight(summary)
+        setInsight(result || 'No insight available.')
+        setLoading(false)
+    }
+
+    if (!insight && !loading) {
+        return (
+            <div className="mb-6">
+                <Button
+                    variant="outline"
+                    className="w-full h-auto py-4 rounded-2xl border-primary/20 bg-primary/5 hover:bg-primary/10 gap-3 group relative overflow-hidden"
+                    onClick={handleGenerateInsight}
+                >
+                    <div className="absolute inset-0 bg-linear-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                    <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                    <div className="flex flex-col items-start text-left">
+                        <span className="font-bold text-primary text-sm flex items-center gap-2">
+                            {language === 'th' ? 'ขอคำแนะนำจาก AI' : 'Ask AI for Insights'}
+                            <span className="text-[10px] bg-primary/20 px-1.5 py-0.5 rounded text-primary/80 font-mono">BETA</span>
+                        </span>
+                        <span className="text-xs text-muted-foreground font-normal">
+                            {language === 'th' ? 'วิเคราะห์ข้อมูลการขายและแนะนำกลยุทธ์' : 'Analyze sales data and suggest trading strategies'}
+                        </span>
+                    </div>
+                </Button>
+            </div>
+        )
+    }
+
+    return (
+        <Card className="mb-6 rounded-2xl border-primary/20 bg-primary/5 shadow-sm overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                <Sparkles className="h-24 w-24 text-primary" />
+            </div>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-primary/10">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                    </div>
+                    <CardTitle className="text-sm font-bold text-primary">
+                        {language === 'th' ? 'คำแนะนำจาก AI Trade Advisor' : 'AI Trade Advisor Insights'}
+                    </CardTitle>
+                </div>
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-primary/10" onClick={() => setInsight('')}>
+                    <Trash2 className="h-3 w-3 text-muted-foreground" />
+                </Button>
+            </CardHeader>
+            <CardContent>
+                {loading ? (
+                    <div className="space-y-2 animate-pulse">
+                        <div className="h-4 bg-primary/10 rounded w-3/4" />
+                        <div className="h-4 bg-primary/10 rounded w-full" />
+                        <div className="h-4 bg-primary/10 rounded w-5/6" />
+                    </div>
+                ) : (
+                    <div className="prose prose-sm text-sm text-muted-foreground leading-relaxed">
+                        {insight.split('\n').map((line, i) => (
+                            <p key={i} className="mb-1">{line}</p>
+                        ))}
+                    </div>
                 )}
             </CardContent>
         </Card>

@@ -6,7 +6,14 @@ import type { Layout } from 'react-grid-layout'
 import { DashboardItem, ChartType } from './dashboard'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Settings2, Trash2, Plus, LayoutGrid, Palette, BarChart3, PieChartIcon, LineChart as LineIcon, AreaChart as AreaIcon, Type, GripVertical } from 'lucide-react'
+import {
+    Settings2, Trash2, Plus, LayoutGrid, Palette, BarChart3,
+    PieChart, LineChart as LineIcon, AreaChart as AreaIcon,
+    Type, GripVertical, Sparkles, TrendingUp, BarChart2, LayoutDashboard,
+    Check, ChevronUp, ChevronDown, Activity, Target, Wand2
+} from 'lucide-react'
+import { generateChartConfig } from '@/app/actions/ai'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
     Dialog,
@@ -30,8 +37,171 @@ interface DashboardEditorProps {
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
+const ChartItemSettings = ({ item, onUpdate, t, months }: {
+    item: DashboardItem,
+    onUpdate: (updates: Partial<DashboardItem>) => void,
+    t: any,
+    months: { val: number, label: string }[]
+}) => {
+    const [showAdvanced, setShowAdvanced] = React.useState(false);
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between border-b pb-3 border-border/50">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10"
+                >
+                    {showAdvanced ? t('dashboard.hide_advanced') : t('dashboard.advanced_settings')}
+                    {showAdvanced ? <ChevronUp className="ml-2 h-3 w-3" /> : <ChevronDown className="ml-2 h-3 w-3" />}
+                </Button>
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{t('dashboard.chart_color')}</span>
+                    <input
+                        type="color"
+                        value={item.color}
+                        onChange={(e) => onUpdate({ color: e.target.value })}
+                        className="h-6 w-12 p-0 border-0 rounded-md cursor-pointer bg-transparent"
+                    />
+                </div>
+            </div>
+
+            {showAdvanced && (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase tracking-wider">{t('dashboard.chart_title')}</Label>
+                        <Input
+                            value={item.title}
+                            onChange={(e) => onUpdate({ title: e.target.value })}
+                            className="h-8 rounded-xl text-xs bg-muted/40 border-0 focus-visible:ring-primary/20"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase tracking-wider">{t('dashboard.chart_metric')}</Label>
+                        <Select
+                            value={item.metric}
+                            onValueChange={(val) => onUpdate({ metric: val as any })}
+                        >
+                            <SelectTrigger className="h-8 rounded-xl text-xs bg-muted/40 border-0 focus:ring-primary/20">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-2xl border-primary/10">
+                                <SelectItem value="total">{t('dashboard.total_income')}</SelectItem>
+                                <SelectItem value="products">{t('dashboard.product_income')}</SelectItem>
+                                <SelectItem value="labor">{t('dashboard.labor_income')}</SelectItem>
+                                <SelectItem value="count">{t('dashboard.receipt_count')}</SelectItem>
+                                <SelectItem value="aov">{t('dashboard.aov')}</SelectItem>
+                                <SelectItem value="retention">{t('dashboard.retention')}</SelectItem>
+                                <SelectItem value="peak_hours">{t('dashboard.peak_hours')}</SelectItem>
+                                <SelectItem value="low_stock">{t('dashboard.low_stock')}</SelectItem>
+                                <SelectItem value="inventory_value">{t('dashboard.inventory_value')}</SelectItem>
+                                <SelectItem value="category">{t('dashboard.category')}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 col-span-2">
+                        <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold uppercase tracking-wider">{t('dashboard.comparison')}</Label>
+                            <Select
+                                value={item.compareType || 'none'}
+                                onValueChange={(val) => onUpdate({ compareType: val as any })}
+                            >
+                                <SelectTrigger className="h-8 rounded-xl text-xs bg-muted/40 border-0 focus:ring-primary/20">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl shadow-2xl border-primary/10">
+                                    <SelectItem value="none">{t('dashboard.none')}</SelectItem>
+                                    <SelectItem value="month">{t('dashboard.month_to_month')}</SelectItem>
+                                    <SelectItem value="products">{t('dashboard.top_products')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    {item.compareType === 'month' && (
+                        <div className="grid grid-cols-2 gap-4 col-span-2 animate-in fade-in slide-in-from-top-2">
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold uppercase tracking-wider">{t('dashboard.select_month')}</Label>
+                                <Select
+                                    value={(item.compareMonth1 ?? 0).toString()}
+                                    onValueChange={(v) => onUpdate({ compareMonth1: parseInt(v) })}
+                                >
+                                    <SelectTrigger className="h-8 rounded-xl text-xs bg-muted/40 border-0">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl shadow-2xl border-primary/10">
+                                        {months.map(m => (
+                                            <SelectItem key={m.val} value={m.val.toString()}>{m.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] font-bold uppercase tracking-wider">{t('dashboard.compare_with')}</Label>
+                                <Select
+                                    value={(item.compareMonth2 ?? 1).toString()}
+                                    onValueChange={(v) => onUpdate({ compareMonth2: parseInt(v) })}
+                                >
+                                    <SelectTrigger className="h-8 rounded-xl text-xs bg-muted/40 border-0">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl shadow-2xl border-primary/10">
+                                        {months.map(m => (
+                                            <SelectItem key={m.val} value={m.val.toString()}>{m.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 export default function DashboardEditor({ layout, onLayoutChange, onClose, hideHeader }: DashboardEditorProps) {
     const { t } = useLanguage()
+
+    const [aiPrompt, setAiPrompt] = React.useState('')
+    const [isAiGenerating, setIsAiGenerating] = React.useState(false)
+    const [isAiOpen, setIsAiOpen] = React.useState(false)
+
+    const handleAiGenerate = async () => {
+        if (!aiPrompt.trim()) return
+        setIsAiGenerating(true)
+        try {
+            const config = await generateChartConfig(aiPrompt)
+            if (config) {
+                const id = `item-${Date.now()}`
+                const newItem: DashboardItem = {
+                    id,
+                    type: config.type || 'stat',
+                    title: config.title || 'AI Generated Chart',
+                    color: config.color || '#3b82f6',
+                    metric: config.metric || 'total',
+                    x: 0,
+                    y: Infinity,
+                    w: config.type === 'stat' ? 3 : 4,
+                    h: config.type === 'stat' ? 2 : 4,
+                    compareType: config.compareType || undefined
+                }
+                onLayoutChange([...layout, newItem])
+                toast.success(t('dashboard.ai_chart_created'))
+                setIsAiOpen(false)
+                setAiPrompt('')
+            } else {
+                toast.error(t('dashboard.ai_failed'))
+            }
+        } catch (error) {
+            toast.error(t('dashboard.ai_failed'))
+        } finally {
+            setIsAiGenerating(false)
+        }
+    }
 
     const months = [
         { val: 0, label: t('dashboard.jan') },
@@ -47,6 +217,7 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
         { val: 10, label: t('dashboard.nov') },
         { val: 11, label: t('dashboard.dec') },
     ]
+
     const handleLayoutChange = (newLayout: readonly any[]) => {
         const updatedItems = layout.map(item => {
             const layoutItem = newLayout.find(l => l.i === item.id)
@@ -73,7 +244,7 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
             color: '#3b82f6',
             metric: 'total',
             x: 0,
-            y: Infinity, // Add at the bottom
+            y: Infinity,
             w: type === 'stat' ? 3 : 4,
             h: type === 'stat' ? 2 : 4
         }
@@ -91,37 +262,164 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
     const chartIcons = {
         area: <AreaIcon className="h-4 w-4" />,
         bar: <BarChart3 className="h-4 w-4" />,
-        pie: <PieChartIcon className="h-4 w-4" />,
+        pie: <PieChart className="h-4 w-4" />,
         line: <LineIcon className="h-4 w-4" />,
         stat: <LayoutGrid className="h-4 w-4" />,
+        radar: <Activity className="h-4 w-4" />,
+        radial: <Target className="h-4 w-4" />,
     }
 
     return (
         <div className="space-y-6">
             {!hideHeader && (
-                <div className="flex flex-wrap items-center justify-between gap-4 bg-muted/30 p-4 rounded-2xl border border-border/50">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => addItem('stat')} className="rounded-xl border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-500">
-                            <Plus className="mr-1 h-4 w-4" /> Stat
+                <div className="space-y-6">
+                    {/* Template Gallery */}
+                    {/* Template Gallery */}
+                    <div className="bg-primary/5 rounded-3xl border border-primary/10 overflow-hidden">
+                        <div className="p-6 border-b border-primary/10 bg-primary/5 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-xl">
+                                    <Sparkles className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-primary">{t('dashboard.templates')}</h3>
+                                    <p className="text-[10px] text-muted-foreground font-bold">{t('dashboard.why_this_chart')}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Dialog open={isAiOpen} onOpenChange={setIsAiOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline" className="rounded-2xl px-4 font-black border-primary/20 text-primary hover:bg-primary/5 gap-2">
+                                            <Wand2 className="h-4 w-4" />
+                                            MAGIC AI
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[425px] rounded-3xl">
+                                        <DialogHeader>
+                                            <DialogTitle className="flex items-center gap-2">
+                                                <Sparkles className="h-5 w-5 text-primary" />
+                                                MAGIC AI CHART
+                                            </DialogTitle>
+                                            <DialogDescription>
+                                                {t('dashboard.ai_prompt_desc')}
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label>{t('dashboard.describe_chart')}</Label>
+                                                <Input
+                                                    placeholder="e.g., Red bar chart showing monthly revenue"
+                                                    value={aiPrompt}
+                                                    onChange={(e) => setAiPrompt(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleAiGenerate()}
+                                                />
+                                            </div>
+                                            <Button
+                                                onClick={handleAiGenerate}
+                                                disabled={isAiGenerating}
+                                                className="w-full rounded-xl font-bold"
+                                            >
+                                                {isAiGenerating ? (
+                                                    <>
+                                                        <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                                                        Generating...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Wand2 className="mr-2 h-4 w-4" />
+                                                        Generate Chart
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
+                                <Button variant="default" onClick={onClose} className="rounded-2xl px-8 font-black shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                                    DONE
+                                </Button>
+                            </div>
+                        </div>
+
+
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {[
+                                { id: 'temp-1', metric: 'total', type: 'area', title: t('dashboard.template_sales_growth'), desc: t('dashboard.best_for_trends'), color: '#3b82f6', icon: <TrendingUp className="h-5 w-5" /> },
+                                { id: 'temp-2', metric: 'category', type: 'pie', title: t('dashboard.template_cat_split'), desc: t('dashboard.best_for_composition'), color: '#ec4899', icon: <PieChart className="h-5 w-5" /> },
+                                { id: 'temp-3', metric: 'total', type: 'bar', title: t('dashboard.rec_comparison_title'), desc: t('dashboard.best_for_comparison'), color: '#8b5cf6', icon: <BarChart2 className="h-5 w-5" />, forceCompare: true },
+                                { id: 'temp-4', metric: 'inventory_value', type: 'stat', title: t('dashboard.inventory_value'), desc: t('dashboard.best_for_metrics'), color: '#10b981', icon: <LayoutDashboard className="h-5 w-5" /> },
+                                { id: 'temp-5', metric: 'category', type: 'radar', title: t('dashboard.template_multi_cat'), desc: t('dashboard.template_multi_cat_desc'), color: '#f59e0b', icon: <Activity className="h-5 w-5" /> },
+                                { id: 'temp-6', metric: 'total', type: 'radial', title: t('dashboard.template_goal_progress'), desc: t('dashboard.template_goal_progress_desc'), color: '#06b6d4', icon: <Target className="h-5 w-5" /> },
+                            ].map(temp => {
+                                const exists = layout.some(l => l.metric === temp.metric && l.type === temp.type && (temp.forceCompare ? l.compareType === 'month' : true));
+                                return (
+                                    <button
+                                        key={temp.id}
+                                        disabled={exists}
+                                        onClick={() => {
+                                            const id = `item-${Date.now()}`;
+                                            const now = new Date();
+                                            const currentMonth = now.getMonth();
+                                            const prevMonth = (currentMonth - 1 + 12) % 12;
+
+                                            onLayoutChange([...layout, {
+                                                id,
+                                                type: temp.type as any,
+                                                title: temp.title,
+                                                color: temp.color,
+                                                metric: temp.metric as any,
+                                                x: 0, y: Infinity,
+                                                w: temp.type === 'stat' ? 3 : temp.forceCompare ? 6 : 4,
+                                                h: temp.type === 'stat' ? 2 : 4,
+                                                compareType: temp.forceCompare ? 'month' : 'none',
+                                                compareMonth1: currentMonth,
+                                                compareMonth2: prevMonth
+                                            }]);
+                                        }}
+                                        className={`group relative flex flex-col text-left p-5 rounded-2xl transition-all duration-300 border-2 ${exists ? 'bg-muted/50 border-transparent opacity-50 cursor-not-allowed' : 'bg-card border-transparent hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1'}`}
+                                    >
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="p-2.5 rounded-xl transition-transform group-hover:scale-110" style={{ backgroundColor: `${temp.color}15`, color: temp.color }}>
+                                                {temp.icon}
+                                            </div>
+                                            <span className="text-[11px] font-black uppercase tracking-tighter leading-tight">{temp.title}</span>
+                                        </div>
+                                        <p className="text-[9px] font-bold text-muted-foreground leading-relaxed">{temp.desc}</p>
+                                        {exists && (
+                                            <div className="absolute top-2 right-2 p-1 bg-primary/20 rounded-full">
+                                                <Check className="h-3 w-3 text-primary" />
+                                            </div>
+                                        )}
+                                        <div className="mt-4 flex items-center gap-1.5 text-[9px] font-black text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                                            ADD NOW <Plus className="h-3 w-3" />
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Quick Guide */}
+                    <div className="flex flex-wrap items-center gap-4 text-[10px] bg-muted/30 p-4 rounded-2xl border border-border/50">
+                        <p className="font-black text-muted-foreground uppercase tracking-widest mr-2">Advanced:</p>
+                        <Button variant="outline" size="sm" onClick={() => addItem('stat')} className="rounded-xl border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-all">
+                            <Plus className="mr-1 h-3 w-3" /> Custom Stat
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => addItem('area')} className="rounded-xl">
-                            <Plus className="mr-1 h-4 w-4" /> Area
+                        <Button variant="outline" size="sm" onClick={() => addItem('area')} className="rounded-xl font-bold transition-all">
+                            <Plus className="mr-1 h-3 w-3" /> Custom Area
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => addItem('bar')} className="rounded-xl">
-                            <Plus className="mr-1 h-4 w-4" /> Bar
+                        <Button variant="outline" size="sm" onClick={() => addItem('pie')} className="rounded-xl font-bold transition-all">
+                            <Plus className="mr-1 h-3 w-3" /> Custom Pie
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => addItem('line')} className="rounded-xl">
-                            <Plus className="mr-1 h-4 w-4" /> Line
+                        <Button variant="outline" size="sm" onClick={() => addItem('radar')} className="rounded-xl font-bold transition-all">
+                            <Plus className="mr-1 h-3 w-3" /> Custom Radar
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => addItem('pie')} className="rounded-xl">
-                            <Plus className="mr-1 h-4 w-4" /> Pie
+                        <Button variant="outline" size="sm" onClick={() => addItem('radial')} className="rounded-xl font-bold transition-all">
+                            <Plus className="mr-1 h-3 w-3" /> Custom Radial
                         </Button>
                     </div>
-                    <Button variant="default" onClick={onClose} className="rounded-xl px-6 shadow-lg shadow-primary/20">
-                        Done Customizing
-                    </Button>
-                </div>
-            )}
+                </div >
+            )
+            }
 
             <ResponsiveGridLayout
                 className="layout"
@@ -135,128 +433,40 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
             >
                 {layout.map(item => (
                     <div key={item.id} className="relative group">
-                        <Card className="h-full border-2 border-dashed border-primary/20 bg-muted/5 flex flex-col">
-                            <div className="drag-handle flex items-center justify-between p-3 cursor-move bg-muted/40 rounded-t-lg border-b border-border/50">
-                                <div className="flex items-center gap-2">
-                                    <GripVertical className="h-4 w-4 text-muted-foreground/50 mr-1" />
+                        <Card className="h-full rounded-2xl border border-primary/10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] bg-card/60 backdrop-blur-md group overflow-hidden stat-card transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/40 hover:-translate-y-1 relative">
+                            <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="flex items-center justify-between p-3 bg-muted/40 rounded-t-lg border-b border-border/50 relative z-20">
+                                <div className="drag-handle flex items-center gap-2 cursor-move flex-1 min-w-0">
+                                    <GripVertical className="h-4 w-4 text-muted-foreground/50 mr-1 shrink-0" />
                                     {chartIcons[item.type]}
                                     <span className="text-xs font-bold uppercase tracking-wider truncate max-w-[120px]">{item.title}</span>
-                                    <span className="text-[8px] px-1.5 py-0.5 h-3 leading-none opacity-50 bg-secondary text-secondary-foreground rounded-full font-bold">{item.type}</span>
+                                    <span className="text-[8px] px-1.5 py-0.5 h-3 leading-none opacity-50 bg-secondary text-secondary-foreground rounded-full font-bold shrink-0">{item.type}</span>
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 shrink-0 ml-2">
                                     <Dialog>
                                         <DialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-primary/10">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 rounded-lg hover:bg-primary/10 relative z-10"
+                                                onPointerDown={(e) => e.stopPropagation()}
+                                                onTouchStart={(e) => e.stopPropagation()}
+                                            >
                                                 <Settings2 className="h-3.5 w-3.5" />
                                             </Button>
                                         </DialogTrigger>
-                                        <DialogContent className="sm:max-w-[425px]">
+                                        <DialogContent className="sm:max-w-[425px] rounded-3xl">
                                             <DialogHeader>
-                                                <DialogTitle>{t('dashboard.config_chart')}</DialogTitle>
+                                                <DialogTitle className="text-sm font-black uppercase tracking-widest">{t('dashboard.config_chart')}</DialogTitle>
                                                 <DialogDescription>{t('dashboard.subtitle')}</DialogDescription>
                                             </DialogHeader>
-                                            <div className="space-y-6 py-4">
-                                                <div className="space-y-2">
-                                                    <Label className="flex items-center gap-2"><Type className="h-4 w-4" /> {t('common.name')}</Label>
-                                                    <Input
-                                                        value={item.title}
-                                                        onChange={(e) => updateItem(item.id, { title: e.target.value })}
-                                                        className="rounded-xl"
-                                                    />
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label>Metric</Label>
-                                                    <Select
-                                                        value={item.metric}
-                                                        onValueChange={(v: any) => updateItem(item.id, { metric: v })}
-                                                    >
-                                                        <SelectTrigger className="rounded-xl">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="rounded-xl">
-                                                            <SelectItem value="total">{t('dashboard.total_income')}</SelectItem>
-                                                            <SelectItem value="products">{t('dashboard.product_income')}</SelectItem>
-                                                            <SelectItem value="labor">{t('dashboard.labor_income')}</SelectItem>
-                                                            <SelectItem value="count">{t('dashboard.receipt_count')}</SelectItem>
-                                                            <SelectItem value="aov">{t('dashboard.aov')}</SelectItem>
-                                                            <SelectItem value="retention">{t('dashboard.retention')}</SelectItem>
-                                                            <SelectItem value="peak_hours">{t('dashboard.peak_hours')}</SelectItem>
-                                                            <SelectItem value="low_stock">{t('dashboard.low_stock')}</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-
-                                                <div className="space-y-4 pt-2 border-t">
-                                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t('dashboard.compare_mode')}</Label>
-                                                    <Select
-                                                        value={item.compareType || 'none'}
-                                                        onValueChange={(v: any) => updateItem(item.id, { compareType: v })}
-                                                    >
-                                                        <SelectTrigger className="rounded-xl">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="rounded-xl">
-                                                            <SelectItem value="none">{t('dashboard.none')}</SelectItem>
-                                                            <SelectItem value="month">{t('dashboard.month_to_month')}</SelectItem>
-                                                            <SelectItem value="products">{t('dashboard.top_products')}</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-
-                                                {item.compareType === 'month' && (
-                                                    <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs">{t('dashboard.select_month')}</Label>
-                                                            <Select
-                                                                value={(item.compareMonth1 ?? 0).toString()}
-                                                                onValueChange={(v) => updateItem(item.id, { compareMonth1: parseInt(v) })}
-                                                            >
-                                                                <SelectTrigger className="rounded-xl h-9">
-                                                                    <SelectValue />
-                                                                </SelectTrigger>
-                                                                <SelectContent className="rounded-xl">
-                                                                    {months.map(m => (
-                                                                        <SelectItem key={m.val} value={m.val.toString()}>{m.label}</SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label className="text-xs">{t('dashboard.compare_with')}</Label>
-                                                            <Select
-                                                                value={(item.compareMonth2 ?? 1).toString()}
-                                                                onValueChange={(v) => updateItem(item.id, { compareMonth2: parseInt(v) })}
-                                                            >
-                                                                <SelectTrigger className="rounded-xl h-9">
-                                                                    <SelectValue />
-                                                                </SelectTrigger>
-                                                                <SelectContent className="rounded-xl">
-                                                                    {months.map(m => (
-                                                                        <SelectItem key={m.val} value={m.val.toString()}>{m.label}</SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                <div className="space-y-2">
-                                                    <Label className="flex items-center gap-2"><Palette className="h-4 w-4" /> {t('settings.theme_color')}</Label>
-                                                    <div className="flex gap-2 flex-wrap">
-                                                        {['#3b82f6', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#ec4899', '#f43f5e', '#22c55e'].map(c => (
-                                                            <button
-                                                                key={c}
-                                                                className={cn(
-                                                                    "h-7 w-7 rounded-full border-2 transition-all",
-                                                                    item.color === c ? "border-primary scale-110 shadow-sm" : "border-transparent opacity-80"
-                                                                )}
-                                                                style={{ backgroundColor: c }}
-                                                                onClick={() => updateItem(item.id, { color: c })}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                            <div className="py-4">
+                                                <ChartItemSettings
+                                                    item={item}
+                                                    onUpdate={(updates) => updateItem(item.id, updates)}
+                                                    t={t}
+                                                    months={months}
+                                                />
                                             </div>
                                         </DialogContent>
                                     </Dialog>
@@ -264,22 +474,30 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => removeItem(item.id)}
-                                        className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive"
+                                        className="h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive relative z-10"
+                                        onPointerDown={(e) => e.stopPropagation()}
+                                        onTouchStart={(e) => e.stopPropagation()}
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </Button>
                                 </div>
                             </div>
-                            <div className="flex-1 flex items-center justify-center p-4">
-                                <div className="text-center opacity-40">
-                                    {chartIcons[item.type]}
-                                    <p className="text-[10px] font-bold mt-1 uppercase tracking-tighter">{item.type} Preview</p>
+                            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
+                                <div className="p-4 rounded-full bg-primary/5 text-primary/40 group-hover:scale-110 group-hover:bg-primary/10 group-hover:text-primary/60 transition-all duration-500">
+                                    {React.cloneElement(chartIcons[item.type] as React.ReactElement<{ className: string }>, { className: "h-8 w-8" })}
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground/60">{t(`dashboard.${item.metric as any}`)}</p>
+                                    <p className="text-[9px] font-bold text-muted-foreground/40 mt-0.5">
+                                        {item.compareType === 'month' ? `Comparison: ${months.find(m => m.val === item.compareMonth1)?.label} vs ${months.find(m => m.val === item.compareMonth2)?.label}` :
+                                            item.compareType === 'products' ? 'Top Items View' : 'Standard View'}
+                                    </p>
                                 </div>
                             </div>
                         </Card>
                     </div>
                 ))}
             </ResponsiveGridLayout>
-        </div>
+        </div >
     )
 }
