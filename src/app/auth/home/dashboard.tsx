@@ -1033,7 +1033,7 @@ function AiInsightCard({ receipts, products, language }: { receipts: any[], prod
                     <Sparkles className="h-5 w-5 text-primary animate-pulse" />
                     <div className="flex flex-col items-start text-left">
                         <span className="font-bold text-primary text-sm flex items-center gap-2">
-                            {language === 'th' ? 'ขอคำแนะนำจาก AI' : 'Ask AI for Insights'}
+                            {language === 'th' ? 'ขอคำแนะนำจาก AI (รอแปป)' : 'Ask AI for Insights'}
                             <span className="text-[10px] bg-primary/20 px-1.5 py-0.5 rounded text-primary/80 font-mono">BETA</span>
                         </span>
                         <span className="text-xs text-muted-foreground font-normal">
@@ -1056,7 +1056,7 @@ function AiInsightCard({ receipts, products, language }: { receipts: any[], prod
                         <Sparkles className="h-4 w-4 text-primary" />
                     </div>
                     <CardTitle className="text-sm font-bold text-primary">
-                        {language === 'th' ? 'คำแนะนำจาก AI Trade Advisor' : 'AI Trade Advisor Insights'}
+                        {language === 'th' ? 'คำแนะนำจาก AI' : 'AI Insights'}
                     </CardTitle>
                 </div>
                 <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-primary/10" onClick={() => setInsight('')}>
