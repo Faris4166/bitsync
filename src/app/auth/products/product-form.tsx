@@ -37,6 +37,8 @@ type Product = {
     price: number
     quantity: number
     image_url: string
+    category?: string
+    track_stock?: boolean
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -61,9 +63,11 @@ export default function ProductManagement() {
 
     const [newProduct, setNewProduct] = useState<Product>({
         name: '',
+        category: '',
         price: 0,
         quantity: 0,
-        image_url: ''
+        image_url: '',
+        track_stock: true
     })
 
     const itemsPerPage = 12
@@ -141,7 +145,7 @@ export default function ProductManagement() {
 
                 toast.success(editingId ? t('products.update_success') : t('products.save_success'))
                 setIsDialogOpen(false)
-                setNewProduct({ name: '', price: 0, quantity: 0, image_url: '' })
+                setNewProduct({ name: '', category: '', price: 0, quantity: 0, image_url: '', track_stock: true })
                 setEditingId(null)
                 mutate('/api/products')
             } catch (err: any) {
@@ -154,9 +158,11 @@ export default function ProductManagement() {
     const handleEditClick = (product: Product) => {
         setNewProduct({
             name: product.name,
+            category: product.category || '',
             price: product.price,
             quantity: product.quantity,
-            image_url: product.image_url
+            image_url: product.image_url,
+            track_stock: product.track_stock ?? true
         })
         setEditingId(product.id!)
         setIsDialogOpen(true)
@@ -206,7 +212,7 @@ export default function ProductManagement() {
                 <Dialog open={isDialogOpen} onOpenChange={(open) => {
                     setIsDialogOpen(open)
                     if (!open) {
-                        setNewProduct({ name: '', price: 0, quantity: 0, image_url: '' })
+                        setNewProduct({ name: '', category: '', price: 0, quantity: 0, image_url: '', track_stock: true })
                         setEditingId(null)
                     }
                 }}>
@@ -232,40 +238,66 @@ export default function ProductManagement() {
                                         className="rounded-lg h-10 border-border"
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="price" className="font-semibold text-muted-foreground ml-1 text-sm">{t('products.price')}</Label>
-                                        <div className="relative group">
-                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors">฿</div>
-                                            <Input
-                                                id="price"
-                                                type="number"
-                                                value={newProduct.price || ''}
-                                                onChange={e => {
-                                                    const val = parseFloat(e.target.value);
-                                                    setNewProduct({ ...newProduct, price: isNaN(val) ? 0 : val });
-                                                }}
-                                                className="pl-8 rounded-lg h-10 border-border"
-                                                min="0"
-                                                step="0.01"
-                                            />
+                                <div className="grid gap-2">
+                                    <Label htmlFor="category" className="font-semibold text-muted-foreground ml-1">{t('products.category')}</Label>
+                                    <Input
+                                        id="category"
+                                        value={newProduct.category}
+                                        onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}
+                                        placeholder="Electronic, Food, etc."
+                                        className="rounded-lg h-10 border-border"
+                                    />
+                                </div>
+                                <div className="grid gap-4">
+                                    <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20">
+                                        <div className="space-y-0.5">
+                                            <Label htmlFor="track-stock" className="text-sm font-bold">{t('products.track_stock')}</Label>
+                                            <p className="text-[10px] text-muted-foreground">{t('products.track_stock_description')}</p>
                                         </div>
+                                        <input
+                                            id="track-stock"
+                                            type="checkbox"
+                                            checked={newProduct.track_stock}
+                                            onChange={e => setNewProduct({ ...newProduct, track_stock: e.target.checked })}
+                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        />
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="quantity" className="font-semibold text-muted-foreground ml-1 text-sm">{t('products.stock')}</Label>
-                                        <div className="relative group">
-                                            <ListOrdered className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                            <Input
-                                                id="quantity"
-                                                type="number"
-                                                value={newProduct.quantity || ''}
-                                                onChange={e => {
-                                                    const val = parseInt(e.target.value);
-                                                    setNewProduct({ ...newProduct, quantity: isNaN(val) ? 0 : val });
-                                                }}
-                                                className="pl-9 rounded-lg h-10 border-border font-mono"
-                                                min="0"
-                                            />
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="price" className="font-semibold text-muted-foreground ml-1 text-sm">{t('products.price')}</Label>
+                                            <div className="relative group">
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors">฿</div>
+                                                <Input
+                                                    id="price"
+                                                    type="number"
+                                                    value={newProduct.price || ''}
+                                                    onChange={e => {
+                                                        const val = parseFloat(e.target.value);
+                                                        setNewProduct({ ...newProduct, price: isNaN(val) ? 0 : val });
+                                                    }}
+                                                    className="pl-8 rounded-lg h-10 border-border"
+                                                    min="0"
+                                                    step="0.01"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className={`grid gap-2 transition-opacity duration-200 ${!newProduct.track_stock ? 'opacity-30 pointer-events-none' : ''}`}>
+                                            <Label htmlFor="quantity" className="font-semibold text-muted-foreground ml-1 text-sm">{t('products.stock')}</Label>
+                                            <div className="relative group">
+                                                <ListOrdered className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                                <Input
+                                                    id="quantity"
+                                                    type="number"
+                                                    value={newProduct.quantity || ''}
+                                                    onChange={e => {
+                                                        const val = parseInt(e.target.value);
+                                                        setNewProduct({ ...newProduct, quantity: isNaN(val) ? 0 : val });
+                                                    }}
+                                                    disabled={!newProduct.track_stock}
+                                                    className="pl-9 rounded-lg h-10 border-border font-mono"
+                                                    min="0"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -348,58 +380,70 @@ export default function ProductManagement() {
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {currentProducts.map(product => (
-                        <Card key={product.id} className="group relative overflow-hidden rounded-lg border border-border/40 shadow-none hover:border-primary/40 transition-all duration-300 bg-card">
+                        <Card key={product.id} className="group relative overflow-hidden rounded-xl border border-border/40 shadow-sm hover:border-primary/40 transition-all duration-300 bg-card hover:shadow-md">
                             <div className="aspect-4/3 w-full relative overflow-hidden bg-muted/5 border-b border-border/40">
                                 {product.image_url ? (
                                     <img
                                         src={product.image_url}
                                         alt={product.name}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/5">
-                                        <Package className="h-8 w-8" />
+                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/10">
+                                        <Package className="h-12 w-12" />
                                     </div>
                                 )}
 
+                                {/* Overlay Gradient */}
+                                <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
                                 {/* Status Badge */}
-                                <div className="absolute top-1.5 left-1.5">
-                                    <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-sm border ${product.quantity > 0 ? 'bg-background/95 text-foreground/80 border-border/40 backdrop-blur-md shadow-sm' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>
-                                        {product.quantity > 0 ? `${t('products.stock')}: ${product.quantity}` : t('products.out_of_stock')}
-                                    </span>
+                                {product.track_stock !== false && (
+                                    <div className="absolute top-2 left-2 z-10">
+                                        <span className={`text-[10px] uppercase tracking-wider font-black px-2 py-1 rounded-md border backdrop-blur-md shadow-sm ${product.quantity > 0 ? 'bg-background/80 text-foreground/90 border-border/40' : 'bg-destructive/20 text-destructive border-destructive/30'}`}>
+                                            {product.quantity > 0 ? `${t('products.stock')}: ${product.quantity}` : t('products.out_of_stock')}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className="absolute bottom-2 right-2 flex gap-1 translate-y-8 group-hover:translate-y-0 transition-transform duration-300 z-10">
+                                    <Button
+                                        variant="secondary"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-background/90 text-foreground hover:bg-primary hover:text-primary-foreground shadow-lg border border-border/20 backdrop-blur-sm"
+                                        onClick={() => handleEditClick(product)}
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-background/90 text-destructive hover:bg-destructive hover:text-white shadow-lg border border-border/20 backdrop-blur-sm"
+                                        onClick={() => setDeleteId(product.id!)}
+                                        disabled={isPending}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
                                 </div>
                             </div>
 
-                            <CardContent className="p-3 space-y-1.5">
+                            <CardContent className="p-4 space-y-2">
                                 <div>
-                                    <h3 className="font-bold text-[13px] leading-tight text-foreground truncate" title={product.name}>{product.name}</h3>
-                                    <p className="text-[9px] text-muted-foreground mt-0.5 uppercase tracking-wider font-medium">ID: {product.id?.substring(0, 8).toUpperCase()}</p>
+                                    <h3 className="font-black text-[14px] leading-tight text-foreground truncate uppercase italic tracking-tight" title={product.name}>{product.name}</h3>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-60">ID: {product.id?.substring(0, 8).toUpperCase()}</p>
+                                        {product.category && (
+                                            <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-black uppercase tracking-tighter italic">
+                                                {product.category}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div className="flex items-center justify-between pt-1.5 border-t border-border/30">
-                                    <p className="text-base font-black text-primary font-mono tracking-tighter">
+                                <div className="flex items-center justify-between pt-2 border-t border-border/10">
+                                    <p className="text-lg font-black text-primary font-mono tracking-tighter">
                                         ฿{product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                     </p>
-
-                                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 rounded-md hover:bg-primary/10 hover:text-primary"
-                                            onClick={() => handleEditClick(product)}
-                                        >
-                                            <Edit className="h-3 w-3" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-6 w-6 rounded-md hover:bg-destructive/10 hover:text-destructive"
-                                            onClick={() => setDeleteId(product.id!)}
-                                            disabled={isPending}
-                                        >
-                                            <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

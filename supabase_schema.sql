@@ -11,6 +11,7 @@ create table if not exists profiles (
   address text,
   shop_name text,
   shop_logo_url text,
+  dashboard_config jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -43,6 +44,7 @@ create table if not exists products (
   name text not null,
   price decimal(12,2) default 0.00 not null,
   quantity integer default 0 not null,
+  category text,
   image_url text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null

@@ -104,10 +104,53 @@ export async function POST(req: Request) {
             .insert({ ...payload, created_at: new Date().toISOString() })
             .select()
             .single()
+        
         if (error) throw error
+
+        // Inventory Stock Decrement Logic
+        if (items && Array.isArray(items)) {
+            for (const item of items) {
+                // Only decrement if product ID exists and stock tracking is enabled for this item
+                if (item.id && item.track_stock !== false) {
+                    const quantityToSubtract = Number(item.quantity) || 0
+                    if (quantityToSubtract > 0) {
+                        try {
+                            // Fetch current quantity
+                            const { data: product, error: fetchError } = await supabase
+                                .from('products')
+                                .select('quantity')
+                                .eq('id', item.id)
+                                .eq('profile_id', profile.id)
+                                .single()
+                            
+                            if (!fetchError && product) {
+                                const newQuantity = Math.max(0, product.quantity - quantityToSubtract)
+                                
+                                // Update quantity
+                                await supabase
+                                    .from('products')
+                                    .update({ 
+                                        quantity: newQuantity,
+                                        updated_at: new Date().toISOString()
+                                    })
+                                    .eq('id', item.id)
+                                    .eq('profile_id', profile.id)
+                                
+                                console.log(`Successfully decremented stock for product ${item.id}: ${product.quantity} -> ${newQuantity}`)
+                            }
+                        } catch (invErr) {
+                            console.error(`Error syncing inventory for item ${item.id}:`, invErr)
+                            // We don't throw here to avoid failing the whole receipt save if inventory sync fails
+                        }
+                    }
+                }
+            }
+        }
+
         return NextResponse.json(data)
     }
-  } catch (err: any) {
+} catch (err: any) {
+    console.error('Receipt POST Exception:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

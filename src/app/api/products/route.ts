@@ -71,47 +71,93 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const { id, name, price, quantity, image_url } = body
-
+    const { name, price, quantity, category, image_url, track_stock } = body
+    
     const payload: any = {
       profile_id: profile.id,
       name,
       price: Number(price),
       quantity: Number(quantity),
+      category,
       image_url,
-      updated_at: new Date().toISOString()
+      track_stock: Boolean(track_stock),
+      updated_at: new Date().toISOString(),
+      created_at: new Date().toISOString()
     }
 
-    console.log('Upserting product with payload:', payload)
+    console.log('Inserting product with payload:', payload)
 
-    if (id) {
-      const { error } = await supabase
-        .from('products')
-        .update(payload)
-        .eq('id', id)
-        .eq('profile_id', profile.id)
-
-      if (error) {
-        console.error('Supabase update error:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
-      }
-    } else {
-      const { error } = await supabase
-        .from('products')
-        .insert({
-          ...payload,
-          created_at: new Date().toISOString()
-        })
-      
-      if (error) {
-        console.error('Supabase insert error:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
-      }
+    const { error } = await supabase
+      .from('products')
+      .insert(payload)
+    
+    if (error) {
+      console.error('Supabase insert error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
     console.error('Product POST Exception:', err)
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 })
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const { userId } = await auth()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+        return NextResponse.json({ error: 'Missing ID' }, { status: 400 })
+    }
+
+    // Check if profile exists
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('clerk_id', userId)
+      .single()
+
+    if (profileError || !profile) {
+      return NextResponse.json({ error: 'Profile Not Found' }, { status: 404 })
+    }
+
+    const body = await req.json()
+    const { name, price, quantity, category, image_url, track_stock } = body
+    
+    const payload = {
+        name,
+        price: Number(price),
+        quantity: Number(quantity),
+        category,
+        image_url,
+        track_stock: Boolean(track_stock),
+        profile_id: profile.id,
+        updated_at: new Date().toISOString()
+    }
+
+    console.log('Updating product with payload:', payload)
+
+    const { error } = await supabase
+        .from('products')
+        .update(payload)
+        .eq('id', id)
+        .eq('profile_id', profile.id)
+
+    if (error) {
+        console.error('Supabase update error:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    console.error('Product PUT Exception:', err)
     return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 })
   }
 }

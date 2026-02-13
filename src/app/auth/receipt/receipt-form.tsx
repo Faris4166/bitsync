@@ -32,6 +32,7 @@ type Product = {
     name: string
     price: number
     quantity: number
+    track_stock?: boolean
 }
 
 type PaymentMethod = {
@@ -60,7 +61,7 @@ export default function ReceiptForm() {
     // Receipt State
     const [customer, setCustomer] = useState({ name: '', phone: '' })
     const [customerOpen, setCustomerOpen] = useState(false) // For Combobox
-    const [selectedItems, setSelectedItems] = useState<{ id: string, name: string, price: number, quantity: number }[]>([])
+    const [selectedItems, setSelectedItems] = useState<{ id: string, name: string, price: number, quantity: number, track_stock?: boolean }[]>([])
     const [laborCost, setLaborCost] = useState(0)
     const [selectedPayments, setSelectedPayments] = useState<string[]>([])
 
@@ -81,7 +82,7 @@ export default function ReceiptForm() {
     }, [])
 
     const addItem = React.useCallback(() => {
-        setSelectedItems(prev => [...prev, { id: '', name: '', price: 0, quantity: 1 }])
+        setSelectedItems(prev => [...prev, { id: '', name: '', price: 0, quantity: 1, track_stock: false }])
     }, [])
 
     const updateItem = React.useCallback((index: number, field: string, value: any) => {
@@ -90,7 +91,7 @@ export default function ReceiptForm() {
             if (field === 'id') {
                 const prod = products.find(p => p.id === value)
                 if (prod) {
-                    newItems[index] = { ...newItems[index], id: prod.id, name: prod.name, price: Number(prod.price) }
+                    newItems[index] = { ...newItems[index], id: prod.id, name: prod.name, price: Number(prod.price), track_stock: prod.track_stock }
                 }
             } else {
                 newItems[index] = { ...newItems[index], [field]: value }
@@ -283,9 +284,17 @@ export default function ReceiptForm() {
                                                                                         item.id === product.id ? "opacity-100" : "opacity-0"
                                                                                     )}
                                                                                 />
-                                                                                <div className="flex flex-col">
-                                                                                    <span>{product.name}</span>
-                                                                                    <span className="text-xs text-muted-foreground">฿{product.price} | คงเหลือ: {product.quantity}</span>
+                                                                                <div className={cn("flex flex-col w-full", product.track_stock !== false && product.quantity <= 0 && "opacity-40")}>
+                                                                                    <div className="flex justify-between items-center">
+                                                                                        <span>{product.name}</span>
+                                                                                        {product.track_stock !== false && product.quantity <= 0 && (
+                                                                                            <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-bold uppercase">{t('products.out_of_stock')}</span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <span className="text-xs text-muted-foreground">
+                                                                                        ฿{product.price.toLocaleString()}
+                                                                                        {product.track_stock !== false ? ` | ${t('products.stock')}: ${product.quantity}` : ''}
+                                                                                    </span>
                                                                                 </div>
                                                                             </CommandItem>
                                                                         ))}
@@ -371,9 +380,17 @@ export default function ReceiptForm() {
                                                                             item.id === product.id ? "opacity-100" : "opacity-0"
                                                                         )}
                                                                     />
-                                                                    <div className="flex flex-col">
-                                                                        <span>{product.name}</span>
-                                                                        <span className="text-xs text-muted-foreground">฿{product.price} | คงเหลือ: {product.quantity}</span>
+                                                                    <div className={cn("flex flex-col w-full", product.track_stock !== false && product.quantity <= 0 && "opacity-40")}>
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span>{product.name}</span>
+                                                                            {product.track_stock !== false && product.quantity <= 0 && (
+                                                                                <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded font-bold uppercase">{t('products.out_of_stock')}</span>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            ฿{product.price.toLocaleString()}
+                                                                            {product.track_stock !== false ? ` | ${t('products.stock')}: ${product.quantity}` : ''}
+                                                                        </span>
                                                                     </div>
                                                                 </CommandItem>
                                                             ))}

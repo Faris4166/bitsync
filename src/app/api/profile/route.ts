@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       address: body.address,
       shop_name: body.shop_name,
       shop_logo_url: body.shop_logo_url,
+      dashboard_config: body.dashboard_config,
     }
 
     console.log('Updating profile for user:', userId, 'with data:', profileData)
