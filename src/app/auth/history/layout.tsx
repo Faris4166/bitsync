@@ -1,0 +1,13 @@
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+    title: 'ประวัติใบเสร็จ | Bitsync',
+}
+
+export default function HistoryLayout({
+    children,
+}: {
+    children: React.ReactNode
+}) {
+    return <>{children}</>
+}

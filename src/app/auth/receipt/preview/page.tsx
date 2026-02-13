@@ -17,6 +17,7 @@ import { QRCodeCanvas } from 'qrcode.react'
 import generatePayload from 'promptpay-qr'
 import { toast } from 'sonner'
 import { useReactToPrint } from 'react-to-print'
+import { useLanguage } from '@/components/language-provider'
 
 const ITEMS_PER_PAGE = 15
 
@@ -48,6 +49,7 @@ type PaymentMethod = {
 }
 
 export default function ReceiptPreview() {
+    const { t, language } = useLanguage()
     const router = useRouter()
     const receiptRef = useRef<HTMLDivElement>(null)
 
@@ -60,7 +62,7 @@ export default function ReceiptPreview() {
     // Generate a unique preview ID for this session to ensure QR code uniqueness
     const [previewId] = useState(() => {
         const now = new Date()
-        const timestamp = now.toLocaleTimeString('th-TH', { hour12: false }).replace(/:/g, '')
+        const timestamp = now.toLocaleTimeString(language === 'th' ? 'th-TH' : 'en-US', { hour12: false }).replace(/:/g, '')
         const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
         return `DRAFT-${timestamp}-${random}`
     })
@@ -71,7 +73,7 @@ export default function ReceiptPreview() {
                 // Read from session storage
                 const savedDraft = sessionStorage.getItem('receipt_draft')
                 if (!savedDraft) {
-                    toast.error('ไม่พบข้อมูลร่างใบเสร็จ')
+                    toast.error(t('receipt.no_customer')) // Or a more appropriate message if available
                     router.push('/auth/receipt')
                     return
                 }
@@ -84,13 +86,13 @@ export default function ReceiptPreview() {
                 if (pRes.ok) setProfile(await pRes.json())
                 if (pmRes.ok) setPaymentMethods(await pmRes.json())
             } catch (err) {
-                toast.error('ไม่สามารถโหลดข้อมูลได้')
+                toast.error(t('common.error_fill')) // generic error
             } finally {
                 setIsLoading(false)
             }
         }
         fetchData()
-    }, [router])
+    }, [router, t])
 
     const handleSave = React.useCallback(async () => {
         if (!draft) return
@@ -109,14 +111,14 @@ export default function ReceiptPreview() {
 
             // 2. Redirect
             sessionStorage.removeItem('receipt_draft')
-            toast.success('บันทึกข้อมูลสำเร็จ')
+            toast.success(t('common.save'))
             router.push(`/auth/receipt/${savedReceipt.id}`)
         } catch (err) {
-            toast.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล')
+            toast.error(t('common.error_fill'))
         } finally {
             setIsSaving(false)
         }
-    }, [draft, router])
+    }, [draft, router, t])
 
     const selectedPaymentMethods = React.useMemo(() => paymentMethods.filter(pm =>
         draft?.payment_info?.selected_ids?.includes(pm.id)
@@ -140,7 +142,7 @@ export default function ReceiptPreview() {
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-muted-foreground animate-pulse">กำลังเตรียมตัวอย่างใบเสร็จ...</p>
+            <p className="text-muted-foreground animate-pulse">{t('common.loading')}</p>
         </div>
     )
 
@@ -152,20 +154,20 @@ export default function ReceiptPreview() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-background/80 backdrop-blur-md p-4 rounded-2xl sticky top-4 z-50 border shadow-sm transition-all duration-300 no-print">
                 <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                     <Button variant="ghost" className="rounded-full shrink-0" onClick={() => router.back()}>
-                        <ArrowLeft className="h-4 w-4 mr-2" /> กลับไปแก้ไข
+                        <ArrowLeft className="h-4 w-4 mr-2" /> {t('receipt.back_to_edit')}
                     </Button>
                     <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-900 rounded-full border border-amber-200">
                         <Edit className="h-4 w-4" />
-                        <span className="text-xs font-bold">โหมดตัวอย่าง (Preview)</span>
+                        <span className="text-xs font-bold">{t('receipt.preview_mode')}</span>
                     </div>
                 </div>
                 <div className="flex gap-2 w-full md:w-auto justify-end">
                     <Button variant="outline" className="rounded-full shrink-0" onClick={() => handlePrint && handlePrint()}>
-                        <Printer className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">พิมพ์ตัวอย่าง / PDF</span>
+                        <Printer className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">{t('receipt.print_preview')}</span>
                     </Button>
                     <Button className="rounded-full shadow-lg bg-green-600 hover:bg-green-700 text-white border-none shrink-0" onClick={handleSave} disabled={isSaving}>
                         {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                        บันทึกข้อมูล
+                        {t('common.save')}
                     </Button>
                 </div>
             </div>
@@ -193,27 +195,27 @@ export default function ReceiptPreview() {
                                         )}
                                         <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-tight">{profile?.shop_name || 'BITSYNC SHOP'}</h1>
                                         <p className="text-xs text-slate-500 max-w-xs mt-1.5 leading-relaxed whitespace-pre-wrap font-medium">
-                                            {profile?.address || 'ไม่ระบุที่อยู่'}
+                                            {profile?.address || (language === 'th' ? 'ไม่ระบุที่อยู่' : 'Address not specified')}
                                             <br />
-                                            โทร: {profile?.phone || '-'}
+                                            {t('receipt.phone')}: {profile?.phone || '-'}
                                         </p>
                                     </div>
                                     <div className="text-right shrink-0">
                                         <div className="mb-3 inline-block text-right">
-                                            <h2 className="text-xl font-bold tracking-tight text-slate-900 uppercase">ใบเสร็จรับเงิน</h2>
+                                            <h2 className="text-xl font-bold tracking-tight text-slate-900 uppercase">{t('receipt.receipt_no').split(' ')[0]}</h2>
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">RECEIPT</p>
                                             <p className="text-[10px] text-slate-400 mt-1">
-                                                หน้า {pageIndex + 1} / {itemChunks.length}
+                                                {t('receipt.page')} {pageIndex + 1} / {itemChunks.length}
                                             </p>
                                         </div>
                                         <div className="space-y-1.5">
                                             <div className="flex items-center justify-end gap-3">
-                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">เลขที่</p>
-                                                <p className="text-sm font-mono font-bold text-slate-900">{previewId} (ร่าง)</p>
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('history.receipt_no')}</p>
+                                                <p className="text-sm font-mono font-bold text-slate-900">{previewId} ({language === 'th' ? 'ร่าง' : 'Draft'})</p>
                                             </div>
                                             <div className="flex items-center justify-end gap-3">
-                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">วันที่</p>
-                                                <p className="text-sm font-bold text-slate-900">{new Date().toLocaleDateString('th-TH', {
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{t('common.date')}</p>
+                                                <p className="text-sm font-bold text-slate-900">{new Date().toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
                                                     year: 'numeric', month: 'long', day: 'numeric'
                                                 })}</p>
                                             </div>
@@ -224,7 +226,7 @@ export default function ReceiptPreview() {
                                 {/* Customer Section (Repeated on every page) */}
                                 <div className="mb-4">
                                     <div className="p-3 bg-slate-100 rounded-lg border border-slate-100">
-                                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ข้อมูลลูกค้า</h3>
+                                        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('receipt.customer_info')}</h3>
                                         <div className="text-sm font-medium text-slate-900 flex justify-between items-center">
                                             <span className="font-bold">{draft.customer_name}</span>
                                             <span className="text-slate-500">{draft.customer_phone}</span>
@@ -237,10 +239,10 @@ export default function ReceiptPreview() {
                                     <table className="w-full mb-4">
                                         <thead>
                                             <tr className="border-y border-slate-200 bg-slate-100">
-                                                <th className="py-2 text-left font-bold text-[10px] text-slate-500 uppercase tracking-wider pl-4">รายการ</th>
-                                                <th className="py-2 text-center font-bold text-[10px] text-slate-500 uppercase tracking-wider w-16">จำนวน</th>
-                                                <th className="py-2 text-right font-bold text-[10px] text-slate-500 uppercase tracking-wider w-24">ราคา</th>
-                                                <th className="py-2 text-right font-bold text-[10px] text-slate-500 uppercase tracking-wider w-24 pr-4">รวม</th>
+                                                <th className="py-2 text-left font-bold text-[10px] text-slate-500 uppercase tracking-wider pl-4">{t('receipt.items')}</th>
+                                                <th className="py-2 text-center font-bold text-[10px] text-slate-500 uppercase tracking-wider w-16">{t('common.quantity')}</th>
+                                                <th className="py-2 text-right font-bold text-[10px] text-slate-500 uppercase tracking-wider w-24">{t('common.price')}</th>
+                                                <th className="py-2 text-right font-bold text-[10px] text-slate-500 uppercase tracking-wider w-24 pr-4">{t('common.total')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -264,7 +266,7 @@ export default function ReceiptPreview() {
                                         {/* Left: Payment */}
                                         <div className="col-span-12 md:col-span-7 space-y-4">
                                             <div>
-                                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">ชำระเงินโดย</h3>
+                                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{t('receipt.paid_by')}</h3>
                                                 <div className="space-y-3">
                                                     {selectedPaymentMethods.map(pm => (
                                                         <div key={pm.id} className="flex items-start gap-3">
@@ -273,7 +275,7 @@ export default function ReceiptPreview() {
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <p className="text-xs font-bold text-slate-900 truncate">
-                                                                    {pm.type === 'promptpay' ? 'พร้อมเพย์' : pm.bank_name}
+                                                                    {pm.type === 'promptpay' ? (language === 'th' ? 'พร้อมเพย์' : 'PromptPay') : pm.bank_name}
                                                                 </p>
                                                                 <p className="text-[10px] font-mono text-slate-600 truncate">
                                                                     {pm.type === 'promptpay' ? pm.promptpay_number : pm.account_number}
@@ -300,25 +302,25 @@ export default function ReceiptPreview() {
                                         <div className="col-span-12 md:col-span-5">
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-slate-500 font-medium">รวมเป็นเงิน</span>
+                                                    <span className="text-slate-500 font-medium">{t('receipt.subtotal')}</span>
                                                     <span className="font-bold text-slate-900">฿{draft.subtotal.toLocaleString()}</span>
                                                 </div>
                                                 {draft.labor_cost > 0 && (
                                                     <div className="flex justify-between items-center text-xs">
-                                                        <span className="text-slate-500 font-medium">ค่าบริการ</span>
+                                                        <span className="text-slate-500 font-medium">{t('receipt.labor_fee')}</span>
                                                         <span className="font-bold text-slate-900">฿{draft.labor_cost.toLocaleString()}</span>
                                                     </div>
                                                 )}
                                                 <div className="h-px bg-slate-200 my-2" />
                                                 <div className="flex justify-between items-center text-lg">
-                                                    <span className="font-bold text-slate-900">ยอดสุทธิ</span>
+                                                    <span className="font-bold text-slate-900">{t('receipt.total_net')}</span>
                                                     <span className="font-bold text-slate-900">฿{draft.total_amount.toLocaleString()}</span>
                                                 </div>
                                             </div>
 
                                             <div className="mt-8 text-center">
                                                 <div className="border-t border-slate-300 w-3/4 mx-auto mb-2" />
-                                                <p className="text-[10px] text-slate-400 uppercase tracking-wider">ผู้รับเงิน / Collector</p>
+                                                <p className="text-[10px] text-slate-400 uppercase tracking-wider">{t('receipt.collector')}</p>
                                             </div>
                                         </div>
                                     </div>

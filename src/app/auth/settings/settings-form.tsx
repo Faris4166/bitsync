@@ -9,9 +9,12 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Plus, Trash2, Building2, User, CreditCard, Wallet, Upload, Image as ImageIcon, Smartphone } from 'lucide-react'
+import { Loader2, Plus, Trash2, Building2, User, CreditCard, Wallet, Upload, Image as ImageIcon, Smartphone, Settings, ShieldCheck, Moon, Sun, Laptop, Languages } from 'lucide-react'
 import { toast } from "sonner"
 import useSWR, { mutate } from 'swr'
+import { useTheme } from 'next-themes'
+import { useLanguage } from '@/components/language-provider'
+import { Language } from '@/lib/translations'
 
 // --- Types ---
 export type ProfileData = {
@@ -41,9 +44,44 @@ type Props = {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
+const COLOR_THEMES = [
+    { name: 'Red', value: 'theme-red', color: 'bg-[#ef4444]' },
+    { name: 'Blue', value: 'theme-blue', color: 'bg-[#3b82f6]' },
+    { name: 'Green', value: 'theme-green', color: 'bg-[#22c55e]' },
+    { name: 'Orange', value: 'theme-orange', color: 'bg-[#f97316]' },
+    { name: 'Neutral', value: 'theme-neutral', color: 'bg-[#737373]' },
+    { name: 'Rose', value: 'theme-rose', color: 'bg-[#f43f5e]' },
+    { name: 'Violet', value: 'theme-violet', color: 'bg-[#8b5cf6]' },
+    { name: 'Yellow', value: 'theme-yellow', color: 'bg-[#eab308]' },
+]
+
 export default function SettingsForm({ initialProfile, initialPaymentMethods }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+    const { theme, setTheme } = useTheme()
+    const { language, setLanguage, t } = useLanguage()
+
+    // Color Theme State
+    const [colorTheme, setColorTheme] = useState<string>('theme-red')
+
+    React.useEffect(() => {
+        const savedTheme = localStorage.getItem('bitsync-color-theme') || 'theme-red'
+        setColorTheme(savedTheme)
+        document.body.classList.forEach(cls => {
+            if (cls.startsWith('theme-')) document.body.classList.remove(cls)
+        })
+        document.body.classList.add(savedTheme)
+    }, [])
+
+    const handleColorThemeChange = (newTheme: string) => {
+        setColorTheme(newTheme)
+        localStorage.setItem('bitsync-color-theme', newTheme)
+        document.body.classList.forEach(cls => {
+            if (cls.startsWith('theme-')) document.body.classList.remove(cls)
+        })
+        document.body.classList.add(newTheme)
+        toast.success(`เปลี่ยนธีมสีเป็น ${newTheme.replace('theme-', '')} เรียบร้อย`)
+    }
 
     // Profile & Shop State
     const [profile, setProfile] = useState<ProfileData>({
@@ -212,10 +250,26 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
 
     return (
         <div className="w-full">
-            <Tabs defaultValue="profile" className="flex flex-col md:flex-row gap-0 md:gap-12 min-h-[600px]">
+            <div className="mb-10 space-y-2">
+                <h1 className="text-3xl font-extrabold tracking-tight italic uppercase">
+                    {t('settings.title').split(' ')[0]} <span className="text-primary italic">{t('settings.title').split(' ').slice(1).join(' ')}</span>
+                </h1>
+                <p className="text-sm font-bold text-muted-foreground/80 uppercase tracking-widest text-[11px]">{t('settings.subtitle')}</p>
+            </div>
+
+            <Tabs defaultValue="general" className="flex flex-col md:flex-row gap-0 md:gap-12 min-h-[600px]">
                 {/* --- Sidebar Navigation --- */}
                 <div className="w-full md:w-64 shrink-0">
                     <TabsList className="flex flex-row md:flex-col h-auto w-full justify-start bg-transparent p-0 gap-1 overflow-x-auto no-scrollbar border-b md:border-b-0 md:border-r border-border/50 pb-4 md:pb-0 md:pr-4">
+                        <TabsTrigger
+                            value="general"
+                            className="flex items-center justify-start gap-3 w-full rounded-xl px-4 py-3 font-bold text-sm transition-all duration-200
+                                       text-muted-foreground hover:text-foreground hover:bg-accent/50
+                                       data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
+                        >
+                            <Settings className="h-4 w-4" />
+                            <span>{t('settings.general')}</span>
+                        </TabsTrigger>
                         <TabsTrigger
                             value="profile"
                             className="flex items-center justify-start gap-3 w-full rounded-xl px-4 py-3 font-bold text-sm transition-all duration-200
@@ -223,7 +277,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                        data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
                         >
                             <User className="h-4 w-4" />
-                            <span>ข้อมูลส่วนตัว</span>
+                            <span>{t('settings.profile')}</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="shop"
@@ -232,7 +286,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                        data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
                         >
                             <Building2 className="h-4 w-4" />
-                            <span>ข้อมูลร้านค้า</span>
+                            <span>{t('settings.shop')}</span>
                         </TabsTrigger>
                         <TabsTrigger
                             value="payment"
@@ -241,19 +295,122 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                        data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
                         >
                             <Wallet className="h-4 w-4" />
-                            <span>ช่องทางการชำระเงิน</span>
+                            <span>{t('settings.payment')}</span>
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="legal"
+                            className="flex items-center justify-start gap-3 w-full rounded-xl px-4 py-3 font-bold text-sm transition-all duration-200
+                                       text-muted-foreground hover:text-foreground hover:bg-accent/50
+                                       data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:shadow-none"
+                        >
+                            <ShieldCheck className="h-4 w-4" />
+                            <span>{t('settings.legal')}</span>
                         </TabsTrigger>
                     </TabsList>
                 </div>
 
                 {/* --- Main Content Area --- */}
                 <div className="flex-1 mt-8 md:mt-0 max-w-3xl">
+                    <TabsContent value="general" className="focus-visible:outline-none m-0 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <section className="space-y-8">
+                            <div className="space-y-1 px-1">
+                                <h2 className="text-2xl font-bold tracking-tight">{t('settings.general')}</h2>
+                                <p className="text-sm font-medium text-muted-foreground">{t('settings.appearance_desc')}</p>
+                            </div>
+
+                            <div className="grid gap-6">
+                                <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
+                                    <CardHeader className="p-8 pb-4">
+                                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                            <Sun className="h-5 w-5 text-primary" />
+                                            {t('settings.theme_mode')}
+                                        </CardTitle>
+                                        <CardDescription>{t('settings.theme_mode_desc') || t('settings.theme_mode')}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-8 pt-0">
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <button
+                                                onClick={() => setTheme('light')}
+                                                className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${theme === 'light' ? 'border-primary bg-primary/5' : 'border-transparent hover:border-border bg-muted/20'}`}
+                                            >
+                                                <Sun className="h-6 w-6" />
+                                                <span className="text-xs font-bold">{t('settings.light')}</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setTheme('dark')}
+                                                className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${theme === 'dark' ? 'border-primary bg-primary/5' : 'border-transparent hover:border-border bg-muted/20'}`}
+                                            >
+                                                <Moon className="h-6 w-6" />
+                                                <span className="text-xs font-bold">{t('settings.dark')}</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setTheme('system')}
+                                                className={`flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all ${theme === 'system' ? 'border-primary bg-primary/5' : 'border-transparent hover:border-border bg-muted/20'}`}
+                                            >
+                                                <Laptop className="h-6 w-6" />
+                                                <span className="text-xs font-bold">{t('settings.system')}</span>
+                                            </button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
+                                    <CardHeader className="p-8 pb-4">
+                                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                            <div className={`h-5 w-5 rounded-full ${COLOR_THEMES.find(t_ => t_.value === colorTheme)?.color || 'bg-primary'}`} />
+                                            {t('settings.theme_color')}
+                                        </CardTitle>
+                                        <CardDescription>{t('settings.accent_desc')}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-8 pt-0">
+                                        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
+                                            {COLOR_THEMES.map((t_) => (
+                                                <button
+                                                    key={t_.value}
+                                                    onClick={() => handleColorThemeChange(t_.value)}
+                                                    className={`group relative flex h-10 w-full items-center justify-center rounded-lg border-2 transition-all ${colorTheme === t_.value ? 'border-primary' : 'border-transparent hover:border-border bg-muted/20'}`}
+                                                    title={t_.name}
+                                                >
+                                                    <div className={`h-6 w-6 rounded-full ${t_.color} shadow-sm transition-transform group-hover:scale-110`} />
+                                                    {colorTheme === t_.value && (
+                                                        <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-primary border-2 border-background" />
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
+                                    <CardHeader className="p-8 pb-4">
+                                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                            <Languages className="h-5 w-5 text-primary" />
+                                            {t('settings.language')}
+                                        </CardTitle>
+                                        <CardDescription>{t('settings.lang_desc')}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="p-8 pt-0">
+                                        <Select value={language} onValueChange={(val) => setLanguage(val as Language)}>
+                                            <SelectTrigger className="w-full h-12 rounded-xl bg-background border-border/60 font-medium">
+                                                <SelectValue placeholder="เลือกภาษา" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="th">ภาษาไทย (Thai)</SelectItem>
+                                                <SelectItem value="en">English (US)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </section>
+                    </TabsContent>
+
                     {/* --- PROFILE TAB content --- */}
                     <TabsContent value="profile" className="focus-visible:outline-none m-0 animate-in fade-in slide-in-from-right-4 duration-500">
                         <section className="space-y-8">
                             <div className="space-y-1 px-1">
-                                <h2 className="text-2xl font-bold tracking-tight">ข้อมูลส่วนตัว</h2>
-                                <p className="text-sm font-medium text-muted-foreground">จัดการข้อมูลตัวตนและรายละเอียดการติดต่อของคุณ</p>
+                                <h2 className="text-2xl font-bold tracking-tight">{t('profile.title')}</h2>
+                                <p className="text-sm font-medium text-muted-foreground">{t('profile.desc')}</p>
                             </div>
 
                             <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
@@ -261,7 +418,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     <CardContent className="space-y-8 p-8">
                                         <div className="grid md:grid-cols-2 gap-8">
                                             <div className="grid gap-3">
-                                                <Label htmlFor="full_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ชื่อ-นามสกุล</Label>
+                                                <Label htmlFor="full_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">{t('profile.full_name')}</Label>
                                                 <Input
                                                     id="full_name"
                                                     className="rounded-xl h-12 border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all font-medium"
@@ -271,7 +428,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                                 />
                                             </div>
                                             <div className="grid gap-3">
-                                                <Label htmlFor="phone" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">เบอร์โทรศัพท์</Label>
+                                                <Label htmlFor="phone" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">{t('profile.phone')}</Label>
                                                 <Input
                                                     id="phone"
                                                     className="rounded-xl h-12 border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all font-medium"
@@ -282,7 +439,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                             </div>
                                         </div>
                                         <div className="grid gap-3">
-                                            <Label htmlFor="address" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ที่อยู่ร้านค้า / ที่อยู่สำหรับใบเสร็จ</Label>
+                                            <Label htmlFor="address" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">{t('profile.address')}</Label>
                                             <Textarea
                                                 id="address"
                                                 className="min-h-[160px] rounded-xl border-border/60 bg-background/50 p-4 focus-visible:ring-primary/20 transition-all font-medium resize-none leading-relaxed"
@@ -295,7 +452,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     <CardFooter className="justify-end border-t border-border/50 p-6 bg-muted/5">
                                         <Button type="submit" className="rounded-xl h-11 px-8 font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary text-primary-foreground" disabled={isPending}>
                                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            บันทึกข้อมูล
+                                            {t('common.save')}
                                         </Button>
                                     </CardFooter>
                                 </form>
@@ -307,8 +464,8 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                     <TabsContent value="shop" className="focus-visible:outline-none m-0 animate-in fade-in slide-in-from-right-4 duration-500">
                         <section className="space-y-8">
                             <div className="space-y-1 px-1">
-                                <h2 className="text-2xl font-bold tracking-tight">แบรนด์ร้านค้า</h2>
-                                <p className="text-sm font-medium text-muted-foreground">เอกลักษณ์ธุรกิจของคุณที่จะปรากฏบนใบเสร็จและแดชบอร์ด</p>
+                                <h2 className="text-2xl font-bold tracking-tight">{t('shop.title')}</h2>
+                                <p className="text-sm font-medium text-muted-foreground">{t('shop.desc')}</p>
                             </div>
 
                             <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
@@ -316,7 +473,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     <CardContent className="space-y-10 p-8">
                                         <div className="grid gap-8">
                                             <div className="grid gap-3">
-                                                <Label htmlFor="shop_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">ชื่อร้านค้า</Label>
+                                                <Label htmlFor="shop_name" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">{t('shop.name')}</Label>
                                                 <Input
                                                     id="shop_name"
                                                     className="rounded-xl h-12 border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all font-medium"
@@ -327,7 +484,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                             </div>
 
                                             <div className="grid gap-3">
-                                                <Label htmlFor="logo" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">โลโก้ร้านค้า</Label>
+                                                <Label htmlFor="logo" className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest ml-1">{t('shop.logo')}</Label>
                                                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 mt-1">
                                                     <div className="relative group overflow-hidden bg-muted/20 border border-dashed border-border/60 rounded-2xl w-40 h-40 flex items-center justify-center transition-all hover:border-primary/40 hover:bg-muted/30 shadow-inner">
                                                         {profile.shop_logo_url ? (
@@ -358,7 +515,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                                                 disabled={isUploading}
                                                             >
                                                                 <Upload className="h-4 w-4 mr-2" />
-                                                                Upload Image
+                                                                {t('shop.upload')}
                                                                 <input
                                                                     type="file"
                                                                     className="absolute inset-0 opacity-0 cursor-pointer"
@@ -378,7 +535,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                                                 className="text-destructive h-auto p-0 font-bold text-xs justify-start opacity-70 hover:opacity-100 transition-opacity"
                                                                 onClick={() => setProfile({ ...profile, shop_logo_url: '' })}
                                                             >
-                                                                <Trash2 className="h-3 w-3 mr-1" /> ลบโลโก้ปัจจุบัน
+                                                                <Trash2 className="h-3 w-3 mr-1" /> {t('shop.remove_logo')}
                                                             </Button>
                                                         )}
                                                     </div>
@@ -389,7 +546,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     <CardFooter className="justify-end border-t border-border/50 p-6 bg-muted/5">
                                         <Button type="submit" className="rounded-xl h-11 px-8 font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all bg-primary text-primary-foreground" disabled={isPending}>
                                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            บันทึกแบรนด์
+                                            {t('common.save')}
                                         </Button>
                                     </CardFooter>
                                 </form>
@@ -402,7 +559,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                         <section className="space-y-8">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-1">
                                 <div className="space-y-1">
-                                    <h2 className="text-2xl font-bold tracking-tight">ช่องทางการชำระเงิน</h2>
+                                    <h2 className="text-2xl font-bold tracking-tight">{t('settings.payment')}</h2>
                                     <p className="text-sm font-medium text-muted-foreground">กำหนดช่องทางรับเงินจากลูกค้าของคุณ</p>
                                 </div>
                                 <Button onClick={() => setShowAddPayment(true)} className="rounded-xl h-11 px-6 font-bold shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0">
@@ -538,7 +695,7 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     </CardContent>
                                     <CardFooter className="justify-end gap-3 border-t border-border/20 p-8 bg-muted/5">
                                         <Button variant="ghost" size="sm" onClick={() => setShowAddPayment(false)} disabled={isPending} className="rounded-xl font-bold px-6">
-                                            ยกเลิก
+                                            {t('common.cancel')}
                                         </Button>
                                         <Button size="sm" onClick={handleAddPayment} disabled={isPending} className="rounded-xl font-bold h-11 px-8">
                                             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -547,6 +704,45 @@ export default function SettingsForm({ initialProfile, initialPaymentMethods }: 
                                     </CardFooter>
                                 </Card>
                             )}
+                        </section>
+                    </TabsContent>
+
+                    {/* --- LEGAL TAB content --- */}
+                    <TabsContent value="legal" className="focus-visible:outline-none m-0 animate-in fade-in slide-in-from-right-4 duration-500">
+                        <section className="space-y-8 pb-10">
+                            <div className="space-y-1 px-1">
+                                <h2 className="text-2xl font-bold tracking-tight">กฎหมายและนโยบาย</h2>
+                                <p className="text-sm font-medium text-muted-foreground">ข้อตกลงการใช้งานและนโยบายความเป็นส่วนตัว</p>
+                            </div>
+
+                            <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
+                                <CardHeader className="p-8 pb-4 border-b border-border/40">
+                                    <CardTitle className="text-lg font-bold">นโยบายความเป็นส่วนตัว</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-8 prose prose-sm max-w-none text-muted-foreground leading-relaxed">
+                                    <p className="font-bold text-foreground mb-4">การเก็บรวบรวมข้อมูลส่วนบุคคล</p>
+                                    <p>เพื่อให้แอปพลิเคชันทำงานได้อย่างมีประสิทธิภาพ เราอาจมีการเก็บรวบรวมข้อมูลดังนี้:</p>
+                                    <ul className="list-disc pl-5 mt-2 space-y-2">
+                                        <li>ข้อมูลบัญชีผู้ใช้ (ชื่อ, อีเมล, รูปโปรไฟล์)</li>
+                                        <li>ข้อมูลร้านค้า (ชื่อร้าน, โลโก้, ที่อยู่)</li>
+                                        <li>ข้อมูลการชำระเงิน (เลขพร้อมเพย์, บัญชีธนาคาร) เพื่อแสดงบนใบเสร็จ</li>
+                                        <li>ข้อมูลการใช้งานเบื้องต้น เพื่อนำมาพัฒนาและปรับปรุงระบบให้ดียิ่งขึ้น</li>
+                                    </ul>
+                                    <p className="mt-6 font-bold text-foreground mb-4">จุดประสงค์ของการใช้ข้อมูล</p>
+                                    <p>ข้อมูลที่ถูกเก็บรวบรวมจะถูกใช้เพื่อประกอบการสร้างใบเสร็จดิจิทัล การจัดการคำสั่งซื้อ และเพื่อให้ผู้ใช้เข้าถึงข้อมูลร้านค้าของตนเองได้อย่างถูกต้อง</p>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="rounded-2xl border border-border/60 shadow-sm bg-card overflow-hidden">
+                                <CardHeader className="p-8 pb-4 border-b border-border/40">
+                                    <CardTitle className="text-lg font-bold">เงื่อนไขการใช้งาน (Terms of Use)</CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-8 prose prose-sm max-w-none text-muted-foreground leading-relaxed">
+                                    <p>1. ผู้ใช้ต้องใช้ข้อมูลที่เป็นจริงในการตั้งค่าร้านค้า เพื่อความถูกต้องของใบเสร็จ</p>
+                                    <p className="mt-3">2. ระบบนี้ถูกออกแบบมาเพื่อช่วยจัดการข้อมูลร้านค้าและใบเสร็จเท่านั้น ผู้ใช้เป็นผู้รับผิดชอบต่อความถูกต้องของข้อมูลภาษีและทางกฎหมายเอง</p>
+                                    <p className="mt-3">3. เราขอสงวนสิทธิ์ในการปรับปรุงเงื่อนไขหรือฟีเจอร์ต่างๆ เพื่อความเหมาะสมในการใช้งาน</p>
+                                </CardContent>
+                            </Card>
                         </section>
                     </TabsContent>
                 </div>

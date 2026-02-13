@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { SignUpButton } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
 import Image from 'next/image';
+import { useLanguage } from '@/components/language-provider';
 
 export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
+    const { t } = useLanguage();
     return (
         <>
             <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -71,8 +73,7 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                         transition={{ delay: 0.2, duration: 0.8 }}
                         className="text-lg sm:text-xl md:text-2xl text-muted-foreground text-center max-w-3xl mb-10 md:mb-14 font-medium leading-relaxed"
                     >
-                        จัดการธุรกิจของคุณด้วยระบบอัจฉริยะ <br className="hidden md:block" />
-                        ที่มาพร้อมกับความเร็วระดับอัลตร้า ดีไซน์ที่สวยงาม และความแม่นยำสูงสุด
+                        {t('landing.hero_subtitle')}
                     </motion.p>
 
                     <motion.div
@@ -87,7 +88,7 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                                 className="h-16 md:h-20 px-8 md:px-12 rounded-[1.5rem] md:rounded-[2rem] bg-primary hover:bg-primary/90 text-white text-lg md:text-xl font-black shadow-2xl shadow-primary/30 dark:shadow-primary/50 transition-all duration-300 hover:scale-105 active:scale-95 group border-none relative overflow-hidden"
                             >
                                 <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                เริ่มใช้งานฟรีตอนนี้
+                                {t('landing.get_started')}
                                 <ArrowRight className="ml-3 h-6 w-6 group-hover:translate-x-2 transition-transform" />
                             </Button>
                         </SignUpButton>

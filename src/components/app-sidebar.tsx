@@ -32,20 +32,21 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs"
+import { useLanguage } from "./language-provider"
 
 // นำเข้าธีมจาก Clerk และ Hook สำหรับเช็คสถานะ Dark Mode
 import { dark } from "@clerk/themes"
 import { useTheme } from "next-themes"
 
-const items = [
-  { title: "หน้าหลัก", url: "/auth/home", icon: Home },
-  { title: "ออกใบเสร็จ", url: "/auth/receipt", icon: Receipt },
-  { title: "จัดการสินค้า", url: "/auth/products", icon: PackageSearch },
-  { title: "ประวัติรายการ", url: "/auth/history", icon: History },
-  { title: "ตั้งค่า", url: "/auth/settings", icon: Settings },
-]
-
 export function AppSidebar() {
+  const { t } = useLanguage()
+  const items = [
+    { title: t('nav.home'), url: "/auth/home", icon: Home },
+    { title: t('nav.receipt'), url: "/auth/receipt", icon: Receipt },
+    { title: t('nav.products'), url: "/auth/products", icon: PackageSearch },
+    { title: t('nav.history'), url: "/auth/history", icon: History },
+    { title: t('nav.settings'), url: "/auth/settings", icon: Settings },
+  ]
   // ดึงค่า theme ปัจจุบัน (light หรือ dark)
   const { resolvedTheme } = useTheme()
 
@@ -112,7 +113,7 @@ export function AppSidebar() {
         <SignedOut>
           <SignInButton mode="modal">
             <Button size="sm" className="w-full h-10 bg-primary text-primary-foreground rounded-lg font-bold shadow-sm hover:opacity-90 transition-all border-none">
-              เข้าสู่ระบบ
+              {t('nav.login')}
             </Button>
           </SignInButton>
         </SignedOut>

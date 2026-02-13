@@ -29,6 +29,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination"
+import { useLanguage } from '@/components/language-provider'
 
 type Product = {
     id?: string
@@ -41,6 +42,7 @@ type Product = {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function ProductManagement() {
+    const { t } = useLanguage()
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
 
@@ -75,7 +77,7 @@ export default function ProductManagement() {
 
         // 3MB limit as requested
         if (file.size > 3 * 1024 * 1024) {
-            toast.error('ไฟล์มีขนาดใหญ่เกินไป (สูงสุด 3MB)')
+            toast.error(t('products.error_size'))
             return
         }
 
@@ -95,14 +97,14 @@ export default function ProductManagement() {
                     })
                 })
 
-                if (!res.ok) throw new Error('อัปโหลดล้มเหลว')
+                if (!res.ok) throw new Error(t('products.upload_failed'))
                 const data = await res.json()
                 setNewProduct(prev => ({ ...prev, image_url: data.url }))
-                toast.success('อัปโหลดรูปภาพเรียบร้อย')
+                toast.success(t('products.upload_success'))
             }
         } catch (err) {
             console.error('Upload error:', err)
-            toast.error('เกิดข้อผิดพลาดในการอัปโหลด')
+            toast.error(t('products.upload_failed'))
         } finally {
             setIsUploading(false)
         }
@@ -111,7 +113,7 @@ export default function ProductManagement() {
     const handleSaveProduct = React.useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
         if (!newProduct.name || newProduct.price < 0) {
-            toast.error('กรุณากรอกข้อมูลให้ครบถ้วน')
+            toast.error(t('common.error_fill'))
             return
         }
 
@@ -127,24 +129,24 @@ export default function ProductManagement() {
                 })
 
                 if (!res.ok) {
-                    let errorMessage = 'เกิดข้อผิดพลาดในการบันทึกสินค้า'
+                    let errorMessage = t('products.save_error')
                     try {
                         const errorData = await res.json()
                         errorMessage = errorData.error || errorMessage
                     } catch (e) {
-                        errorMessage = `Error ${res.status}: ไม่สามารถบันทึกได้`
+                        errorMessage = `Error ${res.status}`
                     }
                     throw new Error(errorMessage)
                 }
 
-                toast.success(editingId ? 'อัปเดตสินค้าเรียบร้อย' : 'บันทึกสินค้าเรียบร้อย')
+                toast.success(editingId ? t('products.update_success') : t('products.save_success'))
                 setIsDialogOpen(false)
                 setNewProduct({ name: '', price: 0, quantity: 0, image_url: '' })
                 setEditingId(null)
                 mutate('/api/products')
             } catch (err: any) {
                 console.error('Product Save Error Detail:', err)
-                toast.error(err.message || 'เกิดข้อผิดพลาดที่ไม่รู้จัก')
+                toast.error(err.message || t('common.error_unknown'))
             }
         })
     }, [newProduct, editingId])
@@ -169,14 +171,14 @@ export default function ProductManagement() {
                     method: 'DELETE'
                 })
 
-                if (!res.ok) throw new Error('ลบสินค้าไม่สำเร็จ')
+                if (!res.ok) throw new Error(t('products.delete_error'))
 
                 mutate('/api/products')
-                toast.success('ลบสินค้าเรียบร้อย')
+                toast.success(t('products.delete_success'))
                 setDeleteId(null)
             } catch (err) {
                 console.error(err)
-                toast.error('เกิดข้อผิดพลาดในการลบ')
+                toast.error(t('products.delete_error'))
             }
         })
     }, [deleteId])
@@ -197,9 +199,9 @@ export default function ProductManagement() {
             <div className="flex items-center justify-between border-b border-border/20 pb-4">
                 <div>
                     <h1 className="text-2xl font-black italic tracking-tight text-foreground uppercase">
-                        Product <span className="text-primary italic">Inventory</span>
+                        {t('products.title').split(' ')[0]} <span className="text-primary italic">{t('products.title').split(' ').slice(1).join(' ')}</span>
                     </h1>
-                    <p className="text-muted-foreground font-medium mt-0.5 text-[11px] uppercase tracking-wider">Manage your items and stock levels</p>
+                    <p className="text-muted-foreground font-medium mt-0.5 text-[11px] uppercase tracking-wider">{t('products.subtitle')}</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={(open) => {
                     setIsDialogOpen(open)
@@ -210,29 +212,29 @@ export default function ProductManagement() {
                 }}>
                     <DialogTrigger asChild>
                         <Button className="rounded-lg h-10 px-6 shadow-sm bg-primary text-primary-foreground font-bold transition-all">
-                            <Plus className="mr-2 h-5 w-5" /> เพิ่มสินค้า
+                            <Plus className="mr-2 h-5 w-5" /> {t('products.add')}
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[450px] rounded-xl border border-border bg-card p-6">
                         <DialogHeader className="space-y-2">
-                            <DialogTitle className="text-2xl font-bold tracking-tight">{editingId ? 'แก้ไขสินค้า' : 'เพิ่มสินค้า'}</DialogTitle>
-                            <DialogDescription className="text-sm font-medium text-muted-foreground">{editingId ? 'แก้ไขข้อมูลรายละเอียดสินค้าของคุณ' : 'กรอกข้อมูลรายละเอียดสินค้าและอัปโหลดรูปภาพ'}</DialogDescription>
+                            <DialogTitle className="text-2xl font-bold tracking-tight">{editingId ? t('products.edit') : t('products.add')}</DialogTitle>
+                            <DialogDescription className="text-sm font-medium text-muted-foreground">{editingId ? t('products.edit_desc') : t('products.add_desc')}</DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSaveProduct} className="space-y-6 py-4">
                             <div className="grid gap-6">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="name" className="font-semibold text-muted-foreground ml-1">ชื่อสินค้า</Label>
+                                    <Label htmlFor="name" className="font-semibold text-muted-foreground ml-1">{t('products.name')}</Label>
                                     <Input
                                         id="name"
                                         value={newProduct.name}
                                         onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
-                                        placeholder="เช่น เสื้อยืดลายกราฟิก"
+                                        placeholder={t('products.name_placeholder')}
                                         className="rounded-lg h-10 border-border"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="price" className="font-semibold text-muted-foreground ml-1 text-sm">ราคา (บาท)</Label>
+                                        <Label htmlFor="price" className="font-semibold text-muted-foreground ml-1 text-sm">{t('products.price')}</Label>
                                         <div className="relative group">
                                             <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors">฿</div>
                                             <Input
@@ -250,7 +252,7 @@ export default function ProductManagement() {
                                         </div>
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="quantity" className="font-semibold text-muted-foreground ml-1 text-sm">จำนวนคงเหลือ</Label>
+                                        <Label htmlFor="quantity" className="font-semibold text-muted-foreground ml-1 text-sm">{t('products.stock')}</Label>
                                         <div className="relative group">
                                             <ListOrdered className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                             <Input
@@ -268,7 +270,7 @@ export default function ProductManagement() {
                                     </div>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="font-semibold text-muted-foreground ml-1 text-sm">รูปภาพสินค้า (สูงสุด 3MB)</Label>
+                                    <Label className="font-semibold text-muted-foreground ml-1 text-sm">{t('products.image')} ({t('products.upload_desc')})</Label>
                                     <div className="flex items-center gap-6">
                                         <div className="relative group overflow-hidden bg-muted/20 border border-dashed border-border rounded-xl w-32 h-32 flex items-center justify-center transition-all hover:border-primary/40 hover:bg-muted/40">
                                             {newProduct.image_url ? (
@@ -280,7 +282,7 @@ export default function ProductManagement() {
                                             ) : (
                                                 <div className="flex flex-col items-center text-muted-foreground/30">
                                                     <ImageIcon className="h-8 w-8 mb-2 opacity-50" />
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest">อัปโหลด</span>
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">{t('common.upload')}</span>
                                                 </div>
                                             )}
                                             {isUploading && (
@@ -297,7 +299,7 @@ export default function ProductManagement() {
                                                 disabled={isUploading}
                                             >
                                                 <Upload className="h-4 w-4 mr-2" />
-                                                เลือกไฟล์ภาพ
+                                                {t('common.select_file')}
                                                 <input
                                                     type="file"
                                                     className="absolute inset-0 opacity-0 cursor-pointer"
@@ -313,7 +315,7 @@ export default function ProductManagement() {
                                                     className="text-destructive/60 hover:text-destructive hover:bg-destructive/10 w-full rounded-xl transition-all font-bold"
                                                     onClick={() => setNewProduct({ ...newProduct, image_url: '' })}
                                                 >
-                                                    ลบรูปภาพ
+                                                    {t('common.remove')}
                                                 </Button>
                                             )}
                                         </div>
@@ -323,7 +325,7 @@ export default function ProductManagement() {
                             <DialogFooter className="pt-4">
                                 <Button type="submit" className="w-full rounded-lg h-12 text-base font-bold bg-primary text-primary-foreground shadow-sm" disabled={isPending || isUploading}>
                                     {isPending && <Loader2 className="mr-3 h-5 w-5 animate-spin" />}
-                                    {editingId ? 'บันทึกการเปลี่ยนแปลง' : 'บันทึกสินค้า'}
+                                    {t('common.save')}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -340,8 +342,8 @@ export default function ProductManagement() {
             ) : products.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed rounded-xl bg-muted/5">
                     <Package className="h-12 w-12 text-muted-foreground/20 mb-4" />
-                    <h3 className="text-lg font-bold text-muted-foreground">ไม่มีสินค้าในคลัง</h3>
-                    <p className="text-muted-foreground/60 text-sm max-w-xs mx-auto">เริ่มต้นด้วยการเพิ่มสินค้าชิ้นแรกของคุณเพื่อนำไปออกใบเสร็จ</p>
+                    <h3 className="text-lg font-bold text-muted-foreground">{t('common.no_data')}</h3>
+                    <p className="text-muted-foreground/60 text-sm max-w-xs mx-auto">{t('products.add_first_desc')}</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -363,7 +365,7 @@ export default function ProductManagement() {
                                 {/* Status Badge */}
                                 <div className="absolute top-1.5 left-1.5">
                                     <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-sm border ${product.quantity > 0 ? 'bg-background/95 text-foreground/80 border-border/40 backdrop-blur-md shadow-sm' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>
-                                        {product.quantity > 0 ? `Stock: ${product.quantity}` : 'Out of Stock'}
+                                        {product.quantity > 0 ? `${t('products.stock')}: ${product.quantity}` : t('products.out_of_stock')}
                                     </span>
                                 </div>
                             </div>
@@ -435,19 +437,19 @@ export default function ProductManagement() {
                 <AlertDialogContent className="rounded-xl">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                            <AlertTriangle className="h-5 w-5" /> ยืนยันการลบสินค้า
+                            <AlertTriangle className="h-5 w-5" /> {t('products.delete_title')}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            คุณแน่ใจหรือไม่ที่จะลบสินค้านี้? การกระทำนี้ไม่สามารถเรียกคืนได้
+                            {t('products.delete_desc')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-lg border-border font-semibold">ยกเลิก</AlertDialogCancel>
+                        <AlertDialogCancel className="rounded-lg border-border font-semibold">{t('common.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={confirmDelete}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-lg font-bold"
                         >
-                            ยืนยันลบ
+                            {t('common.confirm')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -3,26 +3,28 @@
 import React from 'react';
 import { motion } from "framer-motion";
 import { Receipt, BarChart3, History } from "lucide-react";
+import { useLanguage } from '@/components/language-provider';
 
 export function FeatureCards() {
+    const { t } = useLanguage();
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <FeatureCard
                 icon={<Receipt className="h-7 w-7" />}
-                title="Fast Invoicing"
-                desc="สร้างและส่งใบเสร็จระดับโปรในพริบตา พร้อมระบบ Tracking ที่แม่นยำ"
+                title={t('landing.feature1_title')}
+                desc={t('landing.feature1_desc')}
                 color="bg-primary"
             />
             <FeatureCard
                 icon={<BarChart3 className="h-7 w-7" />}
-                title="Real-time Analytics"
-                desc="สรุปยอดขายและวิเคราะห์ข้อมูลธุรกิจแบบวินาทีต่อวินาที"
+                title={t('landing.feature2_title')}
+                desc={t('landing.feature2_desc')}
                 color="bg-primary"
             />
             <FeatureCard
                 icon={<History className="h-7 w-7" />}
-                title="Safe Cloud History"
-                desc="ข้อมูลทั้งหมดถูกเข้ารหัสและสำรองบนระบบ Cloud ระดับมาตรฐานโลก"
+                title={t('landing.feature3_title')}
+                desc={t('landing.feature3_desc')}
                 color="bg-primary"
             />
         </div>

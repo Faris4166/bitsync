@@ -16,6 +16,7 @@ import {
     Wrench,
     LayoutDashboard
 } from 'lucide-react'
+import { useLanguage } from '@/components/language-provider'
 import {
     Area,
     AreaChart,
@@ -41,20 +42,23 @@ type Receipt = {
     created_at: string
 }
 
-const chartConfig = {
-    income: {
-        label: "รายได้รวม",
-        color: "#3b82f6", // Blue
-    },
-    products: {
-        label: "สินค้า",
-        color: "#10b981", // Emerald
-    },
-    labor: {
-        label: "ค่าแรง",
-        color: "#f59e0b", // Amber
-    },
-} satisfies ChartConfig
+export function useChartConfig() {
+    const { t } = useLanguage();
+    return {
+        income: {
+            label: t('dashboard.total_income'),
+            color: "#3b82f6", // Blue
+        },
+        products: {
+            label: t('dashboard.products'),
+            color: "#10b981", // Emerald
+        },
+        labor: {
+            label: t('dashboard.labor'),
+            color: "#f59e0b", // Amber
+        },
+    } satisfies ChartConfig
+}
 
 import useSWR from 'swr'
 
@@ -62,6 +66,8 @@ import useSWR from 'swr'
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function Dashboard() {
+    const { t, language } = useLanguage()
+    const chartConfig = useChartConfig()
     const { data: receiptsData, error, isLoading: swrLoading } = useSWR<Receipt[]>('/api/receipts', fetcher, {
         revalidateOnFocus: true,
         revalidateOnReconnect: true,
@@ -94,7 +100,7 @@ export default function Dashboard() {
             for (let i = 29; i >= 0; i--) {
                 const date = new Date()
                 date.setDate(date.getDate() - i)
-                const label = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+                const label = date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' })
                 groups[label] = 0
             }
         } else if (isLongRange) {
@@ -103,7 +109,7 @@ export default function Dashboard() {
             for (let i = months - 1; i >= 0; i--) {
                 const date = new Date()
                 date.setMonth(date.getMonth() - i)
-                const label = date.toLocaleDateString('th-TH', { month: 'short', year: '2-digit' })
+                const label = date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { month: 'short', year: '2-digit' })
                 groups[label] = 0
             }
         } else {
@@ -111,7 +117,7 @@ export default function Dashboard() {
             for (let i = 89; i >= 0; i -= 3) {
                 const date = new Date()
                 date.setDate(date.getDate() - i)
-                const label = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+                const label = date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' })
                 groups[label] = 0
             }
         }
@@ -119,8 +125,8 @@ export default function Dashboard() {
         filteredReceipts.forEach(r => {
             const date = new Date(r.created_at)
             const label = isLongRange
-                ? date.toLocaleDateString('th-TH', { month: 'short', year: '2-digit' })
-                : date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+                ? date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { month: 'short', year: '2-digit' })
+                : date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' })
 
             if (groups[label] !== undefined) {
                 groups[label] += Number(r.total_amount)
@@ -128,12 +134,12 @@ export default function Dashboard() {
         })
 
         return Object.entries(groups).map(([date, income]) => ({ date, income }))
-    }, [filteredReceipts, dateRange])
+    }, [filteredReceipts, dateRange, language])
 
     const pieChartData = React.useMemo(() => [
-        { name: "สินค้า", value: filteredReceipts.reduce((sum, r) => sum + Number(r.subtotal), 0), fill: "var(--color-products)" },
-        { name: "ค่าแรง", value: filteredReceipts.reduce((sum, r) => sum + Number(r.labor_cost), 0), fill: "var(--color-labor)" },
-    ], [filteredReceipts])
+        { name: t('dashboard.products'), value: filteredReceipts.reduce((sum, r) => sum + Number(r.subtotal), 0), fill: "var(--color-products)" },
+        { name: t('dashboard.labor'), value: filteredReceipts.reduce((sum, r) => sum + Number(r.labor_cost), 0), fill: "var(--color-labor)" },
+    ], [filteredReceipts, t])
 
     const { totalIncome, totalLabor, totalProducts, totalOrders } = React.useMemo(() => ({
         totalIncome: filteredReceipts.reduce((sum, r) => sum + Number(r.total_amount), 0),
@@ -206,19 +212,19 @@ export default function Dashboard() {
 
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST')
             pdf.save(`dashboard-report-${new Date().toISOString().slice(0, 10)}.pdf`)
-            toast.success('ดาวน์โหลดรายงานใบสรุปผลสำเร็จ')
+            toast.success(t('dashboard.export_success'))
         } catch (err) {
             console.error('PDF Export Error:', err)
-            toast.error('ไม่สามารถส่งออก PDF ได้')
+            toast.error(t('dashboard.export_error'))
         } finally {
             setIsExporting(false)
         }
-    }, [dashboardRef])
+    }, [dashboardRef, t])
 
     if (isInitialLoading) return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-muted-foreground animate-pulse">กำลังวิเคราะห์ข้อมูล...</p>
+            <p className="text-muted-foreground animate-pulse">{t('dashboard.analyzing')}</p>
         </div>
     )
 
@@ -230,8 +236,8 @@ export default function Dashboard() {
                         <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">ข้อมูลเชิงลึก</h1>
-                        <p className="text-muted-foreground font-medium">ภาพรวมการเติบโตและสถิติคลังข้อมูล</p>
+                        <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">{t('dashboard.insight')}</h1>
+                        <p className="text-muted-foreground font-medium">{t('dashboard.subtitle')}</p>
                     </div>
                 </div>
 
@@ -239,14 +245,14 @@ export default function Dashboard() {
                     <Select value={dateRange} onValueChange={setDateRange}>
                         <SelectTrigger className="w-[180px] h-10 rounded-xl border-border bg-card shadow-sm font-medium">
                             <Calendar className="mr-2 h-4 w-4 opacity-50" />
-                            <SelectValue placeholder="เลือกช่วงเวลา" />
+                            <SelectValue placeholder={t('dashboard.select_range')} />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-border shadow-xl">
-                            <SelectItem value="30d">1 เดือนล่าสุด</SelectItem>
-                            <SelectItem value="90d">3 เดือนล่าสุด</SelectItem>
-                            <SelectItem value="180d">6 เดือนล่าสุด</SelectItem>
-                            <SelectItem value="365d">1 ปีล่าสุด</SelectItem>
-                            <SelectItem value="all">ทั้งหมด (ไม่อิสระ)</SelectItem>
+                            <SelectItem value="30d">{t('dashboard.month_1')}</SelectItem>
+                            <SelectItem value="90d">{t('dashboard.month_3')}</SelectItem>
+                            <SelectItem value="180d">{t('dashboard.month_6')}</SelectItem>
+                            <SelectItem value="365d">{t('dashboard.year_1')}</SelectItem>
+                            <SelectItem value="all">{t('dashboard.all')}</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -256,7 +262,7 @@ export default function Dashboard() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="rounded-xl border border-border shadow-sm bg-card group">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-semibold text-muted-foreground">รายได้รวมทั้งหมด</CardTitle>
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">{t('dashboard.total_income')}</CardTitle>
                         <div className="p-2.5 bg-primary/10 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
                             <TrendingUp className="h-5 w-5 text-primary" />
                         </div>
@@ -265,47 +271,47 @@ export default function Dashboard() {
                         <div className="text-2xl font-bold tracking-tight">฿{totalIncome.toLocaleString()}</div>
                         <p className="text-xs text-muted-foreground mt-2 font-medium flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            สะสมจาก {totalOrders} รายการ
+                            {t('dashboard.items_sold').replace('{count}', totalOrders.toString())}
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card className="rounded-xl border border-border shadow-sm bg-card group">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-semibold text-muted-foreground">รายได้จากสินค้า</CardTitle>
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">{t('dashboard.product_income')}</CardTitle>
                         <div className="p-2.5 bg-blue-500/10 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
                             <Package className="h-5 w-5 text-blue-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold tracking-tight">฿{totalProducts.toLocaleString()}</div>
-                        <p className="text-xs text-muted-foreground mt-2 font-medium">เฉพาะยอดขายสินค้า</p>
+                        <p className="text-xs text-muted-foreground mt-2 font-medium">{t('dashboard.item_sales_only')}</p>
                     </CardContent>
                 </Card>
 
                 <Card className="rounded-xl border border-border shadow-sm bg-card group">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-semibold text-muted-foreground">รายได้จากค่าแรง</CardTitle>
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">{t('dashboard.labor_income')}</CardTitle>
                         <div className="p-2.5 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
                             <Wrench className="h-5 w-5 text-amber-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold tracking-tight">฿{totalLabor.toLocaleString()}</div>
-                        <p className="text-xs text-muted-foreground mt-2 font-medium">รายได้จากการซ่อมและบริการ</p>
+                        <p className="text-xs text-muted-foreground mt-2 font-medium">{t('dashboard.service_income')}</p>
                     </CardContent>
                 </Card>
 
                 <Card className="rounded-xl border border-border shadow-sm bg-card group">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <CardTitle className="text-sm font-semibold text-muted-foreground">จำนวนใบเสร็จ</CardTitle>
+                        <CardTitle className="text-sm font-semibold text-muted-foreground">{t('dashboard.receipt_count')}</CardTitle>
                         <div className="p-2.5 bg-green-500/10 rounded-xl group-hover:scale-110 transition-transform shadow-sm">
                             <CreditCard className="h-5 w-5 text-green-500" />
                         </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold tracking-tight">{totalOrders}</div>
-                        <p className="text-xs text-muted-foreground mt-2 font-medium">รายการที่ออกทั้งหมด</p>
+                        <p className="text-xs text-muted-foreground mt-2 font-medium">{t('dashboard.total_receipts')}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -318,9 +324,9 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                    <TrendingUp className="h-5 w-5 text-primary" /> แนวโน้มรายได้
+                                    <TrendingUp className="h-5 w-5 text-primary" /> {t('dashboard.income_trend')}
                                 </CardTitle>
-                                <CardDescription>แนวโน้มรายได้รวมตามช่วงเวลาที่เลือก</CardDescription>
+                                <CardDescription>{t('dashboard.income_trend_desc') || t('dashboard.subtitle')}</CardDescription>
                             </div>
                         </div>
                     </CardHeader>
@@ -370,9 +376,9 @@ export default function Dashboard() {
                 <Card className="lg:col-span-4 rounded-2xl border border-border shadow-md bg-card overflow-hidden flex flex-col">
                     <CardHeader className="border-b border-border/50 bg-muted/20 pb-4">
                         <CardTitle className="text-lg font-bold flex items-center gap-2">
-                            <Users className="h-5 w-5 text-primary" /> สัดส่วนรายได้
+                            <Users className="h-5 w-5 text-primary" /> {t('dashboard.income_distribution')}
                         </CardTitle>
-                        <CardDescription>สัดส่วนรายได้ สินค้า vs ค่าแรง</CardDescription>
+                        <CardDescription>{t('dashboard.income_distribution_desc') || (t('dashboard.products') + ' vs ' + t('dashboard.labor'))}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-1 pt-6 pb-2">
                         <ChartContainer config={chartConfig} className="mx-auto aspect-4/3 w-full max-h-[300px]">
@@ -412,7 +418,7 @@ export default function Dashboard() {
                                                             y={(viewBox.cy || 0) + 24}
                                                             className="fill-muted-foreground text-xs"
                                                         >
-                                                            ยอดสุทธิ
+                                                            {t('dashboard.net_total')}
                                                         </tspan>
                                                     </text>
                                                 )
@@ -426,10 +432,10 @@ export default function Dashboard() {
                     </CardContent>
                     <CardFooter className="flex-col gap-2 text-sm pt-0 pb-6 items-start px-6">
                         <div className="flex items-center gap-2 font-bold leading-none">
-                            สัดส่วนรายได้ตามช่วงเวลา <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                            {t('dashboard.income_distribution')} <ArrowUpRight className="h-4 w-4 text-emerald-500" />
                         </div>
                         <div className="leading-none text-muted-foreground">
-                            สินค้า {((totalProducts / totalIncome) * 100).toFixed(1)}% | ค่าแรง {((totalLabor / totalIncome) * 100).toFixed(1)}%
+                            {t('dashboard.products')} {((totalProducts / totalIncome) * 100).toFixed(1)}% | {t('dashboard.labor')} {((totalLabor / totalIncome) * 100).toFixed(1)}%
                         </div>
                     </CardFooter>
                 </Card>
@@ -443,20 +449,20 @@ export default function Dashboard() {
                         <LayoutDashboard className="h-48 w-48 rotate-12" />
                     </div>
                     <CardContent className="p-8 relative">
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-2">ประสิทธิภาพการดำเนินงาน</p>
-                        <h3 className="text-2xl font-bold mb-6">สรุปผลการวิเคราะห์</h3>
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-2">{t('dashboard.performance')}</p>
+                        <h3 className="text-2xl font-bold mb-6">{t('dashboard.summary')}</h3>
                         <div className="space-y-4">
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 backdrop-blur-sm">
                                 <div className="flex items-center gap-3">
                                     <div className="w-2 h-2 rounded-full bg-primary" />
-                                    <span className="text-slate-300 font-medium">ยอดขายผลิตภัณฑ์</span>
+                                    <span className="text-slate-300 font-medium">{t('dashboard.product_income')}</span>
                                 </div>
                                 <span className="text-lg font-bold">฿{totalProducts.toLocaleString()}</span>
                             </div>
                             <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 backdrop-blur-sm">
                                 <div className="flex items-center gap-3">
                                     <div className="w-2 h-2 rounded-full bg-amber-400" />
-                                    <span className="text-slate-300 font-medium">รายได้ค่าบริการ</span>
+                                    <span className="text-slate-300 font-medium">{t('dashboard.labor_income')}</span>
                                 </div>
                                 <span className="text-lg font-bold">฿{totalLabor.toLocaleString()}</span>
                             </div>
@@ -466,14 +472,14 @@ export default function Dashboard() {
 
                 <Card className="rounded-2xl border border-border shadow-lg bg-card p-1">
                     <div className="h-full w-full rounded-[15px] bg-muted/30 p-8 flex flex-col justify-center border border-border/50">
-                        <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] mb-2">กระแสเงินสดรับสุทธิ</span>
+                        <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] mb-2">{t('dashboard.net_total')}</span>
                         <h2 className="text-5xl font-black tracking-tighter text-foreground mb-4 tabular-nums">฿{totalIncome.toLocaleString()}</h2>
                         <div className="flex items-center gap-2 text-emerald-500 font-bold bg-emerald-500/10 w-fit px-3 py-1 rounded-full text-sm">
                             <Users className="h-4 w-4" />
-                            <span>ยอดที่ยืนยันแล้ว</span>
+                            <span>{t('dashboard.net_total_desc')}</span>
                         </div>
                         <p className="mt-8 text-sm text-muted-foreground leading-relaxed">
-                            ระบบได้คำนวณและลดทอนความเสี่ยงทางการเงินจากรายการค้างชำระทั้งหมดในช่วงเวลาที่คุณเลือก
+                            {t('dashboard.financial_logic_desc') || 'The system has calculated and reduced financial risks from all outstanding items.'}
                         </p>
                     </div>
                 </Card>

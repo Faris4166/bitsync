@@ -25,6 +25,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
+import { useLanguage } from '@/components/language-provider'
 
 type Product = {
     id: string
@@ -45,6 +46,7 @@ type PaymentMethod = {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function ReceiptForm() {
+    const { t, language } = useLanguage()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const { data: productsData } = useSWR<Product[]>('/api/products', fetcher)
@@ -101,8 +103,8 @@ export default function ReceiptForm() {
     const total = React.useMemo(() => subtotal + laborCost, [subtotal, laborCost])
 
     const handleSubmit = React.useCallback(async () => {
-        if (!customer.name) return toast.error('กรุณาระบุชื่อลูกค้า')
-        if (selectedItems.length === 0) return toast.error('กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการ')
+        if (!customer.name) return toast.error(t('receipt.error_name'))
+        if (selectedItems.length === 0) return toast.error(t('receipt.error_items'))
 
         const draftData = {
             customer_name: customer.name,
@@ -128,8 +130,8 @@ export default function ReceiptForm() {
                     <Receipt className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">สร้างใบเสร็จใหม่</h1>
-                    <p className="text-muted-foreground">ออกใบเสร็จรับเงินอย่างเป็นทางการให้ลูกค้า</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{t('receipt.create_new')}</h1>
+                    <p className="text-muted-foreground">{t('receipt.subtitle')}</p>
                 </div>
             </div>
 
@@ -138,15 +140,15 @@ export default function ReceiptForm() {
                 <Card className="rounded-xl border border-border shadow-sm bg-card">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <User className="h-5 w-5 text-primary" /> ข้อมูลลูกค้า
+                            <User className="h-5 w-5 text-primary" /> {t('receipt.customer_info')}
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label className="font-semibold text-muted-foreground">ชื่อ-นามสกุล</Label>
+                            <Label className="font-semibold text-muted-foreground">{t('receipt.customer_name')}</Label>
                             <div className="flex gap-2">
                                 <Input
-                                    placeholder="พิมพ์ชื่อลูกค้า..."
+                                    placeholder={t('receipt.search_customer')}
                                     className="rounded-lg h-10 border-border"
                                     value={customer.name}
                                     onChange={(e) => {
@@ -165,10 +167,10 @@ export default function ReceiptForm() {
                                     </PopoverTrigger>
                                     <PopoverContent className="w-[300px] p-0" align="start">
                                         <Command>
-                                            <CommandInput placeholder="ค้นหาชื่อลูกค้า..." />
+                                            <CommandInput placeholder={t('receipt.search_customer')} />
                                             <CommandList>
-                                                <CommandEmpty>ไม่พบข้อมูลลูกค้า</CommandEmpty>
-                                                <CommandGroup heading="ลูกค้าเก่า">
+                                                <CommandEmpty>{t('receipt.no_customer')}</CommandEmpty>
+                                                <CommandGroup heading={t('receipt.old_customer')}>
                                                     {existingCustomers.map((c) => (
                                                         <CommandItem
                                                             key={c.name}
@@ -176,7 +178,7 @@ export default function ReceiptForm() {
                                                             onSelect={() => {
                                                                 setCustomer({ name: c.name, phone: c.phone })
                                                                 setCustomerOpen(false)
-                                                                toast.success('ดึงข้อมูลลูกค้าแล้ว')
+                                                                toast.success(t('receipt.load_success'))
                                                             }}
                                                         >
                                                             <Check
@@ -199,7 +201,7 @@ export default function ReceiptForm() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label className="font-semibold text-muted-foreground">เบอร์โทรศัพท์</Label>
+                            <Label className="font-semibold text-muted-foreground">{t('receipt.customer_phone')}</Label>
                             <Input
                                 placeholder="08x-xxx-xxxx"
                                 className="rounded-lg h-10 border-border"
@@ -214,10 +216,10 @@ export default function ReceiptForm() {
                 <Card className="rounded-xl border border-border shadow-sm bg-card">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="flex items-center gap-2">
-                            <Package className="h-5 w-5 text-primary" /> รายการสินค้า
+                            <Package className="h-5 w-5 text-primary" /> {t('receipt.items')}
                         </CardTitle>
                         <Button variant="outline" size="sm" onClick={addItem} className="rounded-lg border-border font-semibold px-4">
-                            <Plus className="h-4 w-4 mr-1.5" /> เพิ่มรายการ
+                            <Plus className="h-4 w-4 mr-1.5" /> {t('receipt.add_item')}
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -225,10 +227,10 @@ export default function ReceiptForm() {
                             <Table>
                                 <TableHeader>
                                     <TableRow className="border-border/40 hover:bg-transparent">
-                                        <TableHead className="w-[40%] font-semibold">สินค้า</TableHead>
-                                        <TableHead className="font-semibold">ราคา (฿)</TableHead>
-                                        <TableHead className="w-[100px] font-semibold">จำนวน</TableHead>
-                                        <TableHead className="text-right font-semibold">รวม</TableHead>
+                                        <TableHead className="w-[40%] font-semibold">{t('common.name')}</TableHead>
+                                        <TableHead className="font-semibold">{t('common.price')} (฿)</TableHead>
+                                        <TableHead className="w-[100px] font-semibold">{t('common.quantity')}</TableHead>
+                                        <TableHead className="text-right font-semibold">{t('common.total')}</TableHead>
                                         <TableHead className="w-[50px]"></TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -238,7 +240,7 @@ export default function ReceiptForm() {
                                             <TableCell className="align-top pt-4">
                                                 <div className="flex gap-2">
                                                     <Input
-                                                        placeholder="ชื่อสินค้า..."
+                                                        placeholder={t('common.name') + "..."}
                                                         className="rounded-lg h-10 border-border/40 bg-background/50 min-w-[120px]"
                                                         value={item.name}
                                                         onChange={(e) => {
@@ -260,10 +262,10 @@ export default function ReceiptForm() {
                                                         </PopoverTrigger>
                                                         <PopoverContent className="w-[300px] p-0" align="start">
                                                             <Command>
-                                                                <CommandInput placeholder="ค้นหาสินค้า..." />
+                                                                <CommandInput placeholder={t('receipt.search_product')} />
                                                                 <CommandList>
-                                                                    <CommandEmpty>ไม่พบสินค้านี้</CommandEmpty>
-                                                                    <CommandGroup heading="สินค้าในคลัง">
+                                                                    <CommandEmpty>{t('receipt.no_product')}</CommandEmpty>
+                                                                    <CommandGroup heading={t('receipt.inventory_products')}>
                                                                         {products.map((product) => (
                                                                             <CommandItem
                                                                                 key={product.id}
@@ -345,15 +347,15 @@ export default function ReceiptForm() {
                                                         !item.name && "text-muted-foreground"
                                                     )}
                                                 >
-                                                    {item.name || "เลือกสินค้า..."}
+                                                    {item.name || t('receipt.select_product')}
                                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-[300px] p-0" align="start">
                                                 <Command>
-                                                    <CommandInput placeholder="ค้นหาสินค้า..." />
+                                                    <CommandInput placeholder={t('receipt.search_product')} />
                                                     <CommandList>
-                                                        <CommandEmpty>ไม่พบสินค้านี้</CommandEmpty>
+                                                        <CommandEmpty>{t('receipt.no_product')}</CommandEmpty>
                                                         <CommandGroup>
                                                             {products.map((product) => (
                                                                 <CommandItem
@@ -414,7 +416,7 @@ export default function ReceiptForm() {
                                             className="text-destructive hover:bg-destructive/10 -mr-2"
                                             onClick={() => setSelectedItems(selectedItems.filter((_, i) => i !== index))}
                                         >
-                                            <Trash2 className="h-4 w-4 mr-1" /> ลบ
+                                            <Trash2 className="h-4 w-4 mr-1" /> {t('common.delete')}
                                         </Button>
                                     </div>
                                 </div>
@@ -428,12 +430,12 @@ export default function ReceiptForm() {
                     <Card className="rounded-xl border border-border shadow-sm bg-card">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Wallet className="h-5 w-5 text-primary" /> ค่าบริการ
+                                <Wallet className="h-5 w-5 text-primary" /> {t('receipt.labor_fee')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-2">
-                                <Label className="font-semibold text-muted-foreground border-none">ค่าแรง / ค่าซ่อม (บาท)</Label>
+                                <Label className="font-semibold text-muted-foreground border-none">{t('receipt.labor_fee')} (฿)</Label>
                                 <Input
                                     type="number"
                                     className="rounded-lg h-12 text-xl font-bold border-border"
@@ -451,16 +453,16 @@ export default function ReceiptForm() {
                         </div>
                         <CardContent className="p-8 space-y-5 relative z-10">
                             <div className="flex justify-between items-center opacity-70 text-xs font-bold tracking-widest uppercase">
-                                <span>ค่าสินค้า</span>
+                                <span>{t('receipt.subtotal')}</span>
                                 <span>฿{subtotal.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between items-center opacity-70 text-xs font-bold tracking-widest uppercase">
-                                <span>ค่าแรง</span>
+                                <span>{t('receipt.labor_fee')}</span>
                                 <span>฿{laborCost.toLocaleString()}</span>
                             </div>
                             <div className="h-px bg-white/10 my-4" />
                             <div className="flex justify-between items-end">
-                                <span className="font-bold opacity-60 text-xs uppercase tracking-widest">รวมสุทธิ</span>
+                                <span className="font-bold opacity-60 text-xs uppercase tracking-widest">{t('receipt.total_net')}</span>
                                 <span className="text-4xl font-bold tracking-tight">฿{total.toLocaleString()}</span>
                             </div>
                         </CardContent>
@@ -471,9 +473,9 @@ export default function ReceiptForm() {
                 <Card className="rounded-xl border border-border shadow-sm bg-card">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Check className="h-5 w-5 text-primary" /> ช่องทางการชำระเงิน
+                            <Check className="h-5 w-5 text-primary" /> {t('receipt.payment_choice')}
                         </CardTitle>
-                        <CardDescription className="font-medium">เลือกช่องทางที่จะให้ปรากฏบนใบเสร็จ</CardDescription>
+                        <CardDescription className="font-medium">{t('receipt.payment_desc')}</CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-3">
                         {paymentMethods.map((pm) => (
@@ -516,7 +518,7 @@ export default function ReceiptForm() {
                             disabled={isLoading}
                         >
                             {isLoading ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : <ChevronRight className="mr-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />}
-                            ดูตัวอย่างใบเสร็จ
+                            {t('receipt.preview')}
                         </Button>
                     </CardFooter>
                 </Card>

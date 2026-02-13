@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Search, History } from "lucide-react"
+import { useLanguage } from "@/components/language-provider"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
@@ -37,8 +38,10 @@ export function DataTable<TData, TValue>({
     columns,
     data,
     searchKey,
-    searchPlaceholder = "Search...",
+    searchPlaceholder,
 }: DataTableProps<TData, TValue>) {
+    const { t } = useLanguage()
+    const finalSearchPlaceholder = searchPlaceholder || t('common.search')
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
         []
@@ -73,7 +76,7 @@ export function DataTable<TData, TValue>({
                     <div className="relative w-full md:max-w-md">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-muted-foreground" />
                         <Input
-                            placeholder={searchPlaceholder}
+                            placeholder={finalSearchPlaceholder}
                             value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
                             onChange={(event) =>
                                 table.getColumn(searchKey)?.setFilterValue(event.target.value)
@@ -83,7 +86,7 @@ export function DataTable<TData, TValue>({
                     </div>
                 )}
                 <div className="text-sm text-muted-foreground ml-auto">
-                    พบทั้งหมด {table.getFilteredRowModel().rows.length} รายการ
+                    {t('common.found_all').replace('{count}', table.getFilteredRowModel().rows.length.toString())}
                 </div>
             </div>
             <div className="rounded-xl border border-border shadow-sm overflow-hidden bg-card">
@@ -131,7 +134,7 @@ export function DataTable<TData, TValue>({
                                     className="h-24 text-center py-20 text-muted-foreground"
                                 >
                                     <History className="h-12 w-12 mx-auto mb-4 opacity-10" />
-                                    ไม่พบข้อมูล
+                                    {t('common.no_data')}
                                 </TableCell>
                             </TableRow>
                         )}
@@ -145,7 +148,7 @@ export function DataTable<TData, TValue>({
                     onClick={() => table.previousPage()}
                     disabled={!table.getCanPreviousPage()}
                 >
-                    ก่อนหน้า
+                    {t('common.previous')}
                 </Button>
                 <Button
                     variant="outline"
@@ -153,7 +156,7 @@ export function DataTable<TData, TValue>({
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}
                 >
-                    ถัดไป
+                    {t('common.next')}
                 </Button>
             </div>
         </div>
