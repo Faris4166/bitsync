@@ -33,12 +33,18 @@ import {
     Activity,
     Target,
     Sparkles,
-    Trash2
+    Trash2,
+    Palette,
+    BarChart2,
+    Check,
+    ChevronUp,
+    ChevronDown,
+    GripVertical,
+    RotateCcw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/components/language-provider'
 import DashboardEditor from './dashboard-editor'
-import { generateTradingInsight } from '@/app/actions/ai'
 import {
     Sheet,
     SheetContent,
@@ -47,6 +53,14 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 import { useLanguage as useLanguageT } from '@/components/language-provider'
 import {
     Area,
@@ -68,12 +82,15 @@ import {
     PolarAngleAxis,
     PolarRadiusAxis,
     RadialBar,
-    RadialBarChart
+    RadialBarChart,
+    LineChart,
+    Line
 } from 'recharts'
 import { Responsive, WidthProvider } from 'react-grid-layout/legacy'
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { generateTradingInsight, AiInsight } from '@/app/actions/ai'
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -91,9 +108,9 @@ export type ChartType = 'area' | 'bar' | 'pie' | 'line' | 'stat' | 'radar' | 'ra
 
 export type DashboardItem = {
     id: string
-    type: ChartType
+    type: 'area' | 'bar' | 'pie' | 'line' | 'radar' | 'radial' | 'stat'
     title: string
-    color: string
+    desc: string
     metric: 'total' | 'products' | 'labor' | 'count' | 'aov' | 'retention' | 'low_stock' | 'peak_hours' | 'inventory_value' | 'category'
     x: number
     y: number
@@ -102,6 +119,10 @@ export type DashboardItem = {
     compareType?: 'none' | 'month' | 'products'
     compareMonth1?: number
     compareMonth2?: number
+    color?: string // For custom override
+    limit?: number // Top N items
+    timeRange?: string // '7d', '30d', '90d', 'all' override
+    sortBy?: 'value' | 'label' | 'date'
 }
 
 export function useChartConfig() {
@@ -145,10 +166,74 @@ export default function Dashboard() {
     const [layout, setLayout] = useState<DashboardItem[]>([])
     const [isSaving, setIsSaving] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const [aiInsight, setAiInsight] = useState<AiInsight | null>(null)
+    const [loadingInsight, setLoadingInsight] = useState(false)
+    const [chatOpen, setChatOpen] = useState(false)
+    const [autoChatQuery, setAutoChatQuery] = useState('')
+    const [quotaCooldown, setQuotaCooldown] = useState(0)
+
+    // Quota Cooldown Timer
+    useEffect(() => {
+        if (quotaCooldown > 0) {
+            const timer = setInterval(() => {
+                setQuotaCooldown(prev => prev - 1)
+            }, 1000)
+            return () => clearInterval(timer)
+        }
+    }, [quotaCooldown])
+
+
 
     useEffect(() => {
         setMounted(true)
     }, [])
+
+    const refreshInsight = async () => {
+        if (quotaCooldown > 0) return
+
+        setLoadingInsight(true)
+        try {
+            const data = await generateTradingInsight(receiptsData || [], dateRange, language === 'th' ? 'th' : 'en')
+            setAiInsight(data)
+
+            // Cache the successful result
+            if (data && data.trend) {
+                const cacheKey = `bitsync_ai_insight_${dateRange}_${new Date().toDateString()}`
+                localStorage.setItem(cacheKey, JSON.stringify(data))
+            }
+        } catch (err: any) {
+            console.error("AI Insight Fetch Error:", err)
+            const isRateLimit = err.message?.includes('429') || err.message?.includes('Quota') || err.status === 429
+
+            if (isRateLimit) {
+                setQuotaCooldown(60) // Lock for 60 seconds
+                toast.error(language === 'th' ? 'โควตาเต็ม กรุณารอสักครู่' : 'Quota exceeded, please wait')
+            }
+        } finally {
+            setLoadingInsight(false)
+        }
+    }
+
+    useEffect(() => {
+        if (mounted && receiptsData && receiptsData.length > 0) {
+            // Check cache first to avoid hitting API rate limits
+            const cacheKey = `bitsync_ai_insight_${dateRange}_${new Date().toDateString()}`
+            const cached = localStorage.getItem(cacheKey)
+
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached)
+                    setAiInsight(parsed)
+                    setLoadingInsight(false)
+                    return
+                } catch (e) {
+                    localStorage.removeItem(cacheKey)
+                }
+            }
+            // Auto-fetch REMOVED. User must click to generate.
+            setLoadingInsight(false)
+        }
+    }, [receiptsData, dateRange, language, mounted])
 
     // Load layout from profile
     useEffect(() => {
@@ -157,12 +242,12 @@ export default function Dashboard() {
         } else if (profileData && !layout.length) {
             // Default layout if none exists
             setLayout([
-                { id: 'income-trend', type: 'area', title: t('dashboard.income_trend'), color: '#3b82f6', metric: 'total', x: 0, y: 0, w: 8, h: 4 },
-                { id: 'distribution', type: 'pie', title: t('dashboard.income_distribution'), color: '#10b981', metric: 'products', x: 8, y: 0, w: 4, h: 4 },
-                { id: 'stat-total', type: 'stat', title: t('dashboard.total_income'), color: '#3b82f6', metric: 'total', x: 0, y: 4, w: 3, h: 2 },
-                { id: 'stat-products', type: 'stat', title: t('dashboard.product_income'), color: '#10b981', metric: 'products', x: 3, y: 4, w: 3, h: 2 },
-                { id: 'stat-labor', type: 'stat', title: t('dashboard.labor_income'), color: '#f59e0b', metric: 'labor', x: 6, y: 4, w: 3, h: 2 },
-                { id: 'stat-orders', type: 'stat', title: t('dashboard.receipt_count'), color: '#10b981', metric: 'count', x: 9, y: 4, w: 3, h: 2 },
+                { id: 'income-trend', type: 'area', title: t('dashboard.income_trend'), desc: 'รายได้ตามช่วงเวลา', color: '#3b82f6', metric: 'total', x: 0, y: 0, w: 8, h: 4 },
+                { id: 'distribution', type: 'pie', title: t('dashboard.income_distribution'), desc: 'แบ่งตามหมวดหมู่', color: '#10b981', metric: 'products', x: 8, y: 0, w: 4, h: 4 },
+                { id: 'stat-total', type: 'stat', title: t('dashboard.total_income'), desc: 'รายได้รวม', color: '#3b82f6', metric: 'total', x: 0, y: 4, w: 3, h: 2 },
+                { id: 'stat-products', type: 'stat', title: t('dashboard.product_income'), desc: 'จากสินค้า', color: '#10b981', metric: 'products', x: 3, y: 4, w: 3, h: 2 },
+                { id: 'stat-labor', type: 'stat', title: t('dashboard.labor_income'), desc: 'จากค่าแรง', color: '#f59e0b', metric: 'labor', x: 6, y: 4, w: 3, h: 2 },
+                { id: 'stat-orders', type: 'stat', title: t('dashboard.receipt_count'), desc: 'จำนวนออเดอร์', color: '#10b981', metric: 'count', x: 9, y: 4, w: 3, h: 2 },
             ])
         }
     }, [profileData, t])
@@ -177,9 +262,9 @@ export default function Dashboard() {
             })
             if (!res.ok) throw new Error('Failed to save')
             mutateProfile()
-            toast.success('Dashboard layout saved')
+            toast.success('บันทึกการจัดวางเรียบร้อย')
         } catch (err) {
-            toast.error('Could not save layout')
+            toast.error('ไม่สามารถบันทึกได้')
         } finally {
             setIsSaving(false)
         }
@@ -187,23 +272,35 @@ export default function Dashboard() {
 
     const resetToDefault = () => {
         const defaultLayout: DashboardItem[] = [
-            { id: 'income-trend', type: 'area', title: t('dashboard.income_trend'), color: '#3b82f6', metric: 'total', x: 0, y: 0, w: 8, h: 4 },
-            { id: 'distribution', type: 'pie', title: t('dashboard.income_distribution'), color: '#10b981', metric: 'products', x: 8, y: 0, w: 4, h: 4 },
-            { id: 'stat-total', type: 'stat', title: t('dashboard.total_income'), color: '#3b82f6', metric: 'total', x: 0, y: 4, w: 3, h: 2 },
-            { id: 'stat-products', type: 'stat', title: t('dashboard.product_income'), color: '#10b981', metric: 'products', x: 3, y: 4, w: 3, h: 2 },
-            { id: 'stat-labor', type: 'stat', title: t('dashboard.labor_income'), color: '#f59e0b', metric: 'labor', x: 6, y: 4, w: 3, h: 2 },
-            { id: 'stat-orders', type: 'stat', title: t('dashboard.receipt_count'), color: '#10b981', metric: 'count', x: 9, y: 4, w: 3, h: 2 },
+            { id: 'income-trend', type: 'area', title: t('dashboard.income_trend'), desc: 'รายได้ตามช่วงเวลา', color: '#3b82f6', metric: 'total', x: 0, y: 0, w: 8, h: 4 },
+            { id: 'distribution', type: 'pie', title: t('dashboard.income_distribution'), desc: 'แบ่งตามหมวดหมู่', color: '#10b981', metric: 'products', x: 8, y: 0, w: 4, h: 4 },
+            { id: 'stat-total', type: 'stat', title: t('dashboard.total_income'), desc: 'รายได้รวม', color: '#3b82f6', metric: 'total', x: 0, y: 4, w: 3, h: 2 },
+            { id: 'stat-products', type: 'stat', title: t('dashboard.product_income'), desc: 'จากสินค้า', color: '#10b981', metric: 'products', x: 3, y: 4, w: 3, h: 2 },
+            { id: 'stat-labor', type: 'stat', title: t('dashboard.labor_income'), desc: 'จากค่าแรง', color: '#f59e0b', metric: 'labor', x: 6, y: 4, w: 3, h: 2 },
+            { id: 'stat-orders', type: 'stat', title: t('dashboard.receipt_count'), desc: 'จำนวนออเดอร์', color: '#10b981', metric: 'count', x: 9, y: 4, w: 3, h: 2 },
         ]
         setLayout(defaultLayout)
-        toast.success('Layout reset to default')
+        toast.success('รีเซ็ตค่าเริ่มต้นเรียบร้อย')
     }
 
     const addItem = (type: ChartType) => {
         const id = `item-${Date.now()}`
+        const titleMap: Record<string, string> = {
+            area: language === 'th' ? 'กราฟพื้นที่' : 'Area Chart',
+            bar: language === 'th' ? 'กราฟแท่ง' : 'Bar Chart',
+            pie: language === 'th' ? 'กราฟวงกลม' : 'Pie Chart',
+            line: language === 'th' ? 'กราฟเส้น' : 'Line Chart',
+            radar: language === 'th' ? 'กราฟเรดาร์' : 'Radar Chart',
+            radial: language === 'th' ? 'กราฟวงกลมความคืบหน้า' : 'Radial Chart',
+            stat: language === 'th' ? 'การ์ดสถิติ' : 'Stat Card'
+        }
+        const title = `${titleMap[type] || 'Chart'} ${language === 'th' ? '(ใหม่)' : '(New)'}`
+
         const newItem: DashboardItem = {
             id,
             type,
-            title: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+            title,
+            desc: language === 'th' ? 'กราฟใหม่' : 'New Chart',
             color: '#3b82f6',
             metric: 'total',
             x: 0,
@@ -430,6 +527,33 @@ export default function Dashboard() {
                 </div>
             </div>
 
+            {/* AI Insight Card */}
+            {mounted && (
+                <div className="animate-in fade-in slide-in-from-top-4 duration-700 delay-200">
+                    <AiInsightCard
+                        insight={aiInsight}
+                        isLoading={loadingInsight}
+                        cooldown={quotaCooldown}
+                        onAsk={(q) => {
+                            setAutoChatQuery(q)
+                            setChatOpen(true)
+                        }}
+                        onGenerate={refreshInsight}
+                    />
+                </div>
+            )}
+
+            {mounted && receiptsData && (
+                <AiChatDialog
+                    data={receiptsData}
+                    t={t}
+                    language={language}
+                    isOpen={chatOpen}
+                    onOpenChange={setChatOpen}
+                    autoQuery={autoChatQuery}
+                />
+            )}
+
             {isEditMode && (
                 <div className="flex flex-wrap items-center gap-2 pb-6 animate-in fade-in slide-in-from-top-4 duration-500 overflow-x-auto no-scrollbar">
                     <Button variant="secondary" size="sm" onClick={() => addItem('stat')} className="rounded-lg gap-2 border border-border">
@@ -470,7 +594,6 @@ export default function Dashboard() {
                 </div>
             ) : (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <AiInsightCard receipts={receipts} products={productsData} language={language} />
                     <ResponsiveGridLayout
                         className="layout"
                         layouts={{ lg: layout.map(i => ({ i: i.id, x: i.x, y: i.y, w: i.w, h: i.h })) }}
@@ -490,6 +613,13 @@ export default function Dashboard() {
                 </div>
             )}
             <style jsx global>{`
+                @keyframes spin-reverse {
+                    from { transform: rotate(360deg); }
+                    to { transform: rotate(0deg); }
+                }
+                .animate-spin-reverse {
+                    animation: spin-reverse 1.2s linear infinite;
+                }
                 .pdf-exporting {
                     width: 1400px !important;
                     background: white !important;
@@ -545,13 +675,45 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
     const { t, language } = useLanguage()
 
     // Process data based on metric
+
+    // Predefined palette for categorical charts (max 10)
+    const CHART_PALETTE = [
+        "#3b82f6", // Blue
+        "#10b981", // Emerald
+        "#f59e0b", // Amber
+        "#ef4444", // Red
+        "#8b5cf6", // Violet
+        "#ec4899", // Pink
+        "#06b6d4", // Cyan
+        "#f97316", // Orange
+        "#6366f1", // Indigo
+        "#84cc16", // Lime
+    ]
+
+    // Process data based on metric
     const data = React.useMemo(() => {
+        // Filter receipts by item-specific timeRange if present, else use global dateRange
+        const effectiveRange = item.timeRange || dateRange
+        let filteredReceipts = receipts
+
+        if (effectiveRange !== 'all' && !item.compareType) {
+            const now = new Date()
+            const past = new Date()
+            if (effectiveRange === '7d') past.setDate(now.getDate() - 7)
+            if (effectiveRange === '30d') past.setDate(now.getDate() - 30)
+            if (effectiveRange === '90d') past.setDate(now.getDate() - 90)
+            if (effectiveRange === '180d') past.setDate(now.getDate() - 180)
+            if (effectiveRange === '365d') past.setDate(now.getDate() - 365)
+
+            filteredReceipts = receipts.filter(r => new Date(r.created_at) >= past)
+        }
+
         if (item.compareType === 'month') {
             const m1 = item.compareMonth1 ?? 0
             const m2 = item.compareMonth2 ?? 1
             const totals = [0, 0]
 
-            receipts.forEach(r => {
+            filteredReceipts.forEach(r => {
                 const date = new Date(r.created_at)
                 if (date.getMonth() === m1) {
                     if (item.metric === 'total') totals[0] += Number(r.total_amount)
@@ -579,44 +741,51 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             ]
         }
 
-        if (item.compareType === 'products') {
+        if (item.compareType === 'products' || item.metric === 'category' || item.metric === 'low_stock') {
             const productTotals: Record<string, number> = {}
-            receipts.forEach(r => {
+
+            if (item.metric === 'low_stock') {
+                return products
+                    .filter(p => (p.track_stock !== false) && (p.quantity <= (item.limit || 10)))
+                    .map((p, i) => ({
+                        label: p.name,
+                        value: p.quantity,
+                        fill: CHART_PALETTE[i % CHART_PALETTE.length]
+                    }))
+                    .sort((a, b) => a.value - b.value)
+            }
+
+            filteredReceipts.forEach(r => {
                 const items = (r as any).items || []
                 if (Array.isArray(items)) {
                     items.forEach((p: any) => {
-                        const name = p.name || 'Unknown'
+                        const name = item.metric === 'category' ? (p.category || (language === 'th' ? 'อื่นๆ' : 'Other')) : (p.name || 'Unknown')
                         let val = 0
                         if (item.metric === 'count') val = Number(p.quantity) || 1
                         else val = (Number(p.quantity) || 1) * (Number(p.price) || 0)
+
                         productTotals[name] = (productTotals[name] || 0) + val
                     })
                 }
             })
 
-            return Object.entries(productTotals)
-                .map(([name, value]) => ({ label: name, value }))
-                .sort((a, b) => b.value - a.value)
-                .slice(0, 5)
-        }
+            let result = Object.entries(productTotals)
+                .map(([name, value], index) => ({
+                    label: name,
+                    value,
+                    fill: CHART_PALETTE[index % CHART_PALETTE.length]
+                }))
 
-        if (item.metric === 'category' || item.type === 'radar') {
-            const categoryTotals: Record<string, number> = {}
-            receipts.forEach(r => {
-                const items = (r as any).items || []
-                if (Array.isArray(items)) {
-                    items.forEach((p: any) => {
-                        const cat = p.category || (language === 'th' ? 'อื่นๆ' : 'Other')
-                        const val = (Number(p.quantity) || 1) * (Number(p.price) || 0)
-                        categoryTotals[cat] = (categoryTotals[cat] || 0) + val
-                    })
-                }
-            })
-            const result = Object.entries(categoryTotals)
-                .map(([name, value]) => ({ label: name, value }))
-                .sort((a, b) => b.value - a.value)
+            // Sorting
+            if (item.sortBy === 'label') result.sort((a, b) => a.label.localeCompare(b.label))
+            else result.sort((a, b) => b.value - a.value) // Default sort by value desc
 
-            return item.type === 'radar' ? result.slice(0, 6) : result
+            // Limit (Default to 5 for comparison, 10 for category/pie)
+            const defaultLimit = item.metric === 'products' ? 5 : 10
+            const limit = item.limit || defaultLimit
+            result = result.slice(0, limit)
+
+            return result
         }
 
         if (item.type === 'radial') {
@@ -634,21 +803,13 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             ]
         }
 
-        if (item.metric === 'low_stock') {
-            return products
-                .filter(p => (p.track_stock !== false) && (p.quantity <= 5))
-                .map(p => ({ label: p.name, value: p.quantity }))
-                .sort((a, b) => a.value - b.value)
-                .slice(0, 10)
-        }
 
         if (item.metric === 'aov') {
-            // Group total / count by same logic as standard timeline
-            // For simplicity, let's reuse the groups logic but store [sum, count]
+            // Group total / count by time
             const groups: Record<string, [number, number]> = {}
-            const isLongRange = ['180d', '365d', 'all'].includes(dateRange)
+            const isLongRange = ['180d', '365d', 'all'].includes(effectiveRange)
 
-            receipts.forEach(r => {
+            filteredReceipts.forEach(r => {
                 const date = new Date(r.created_at)
                 const labelStr = isLongRange
                     ? date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { month: 'short', year: '2-digit' })
@@ -672,23 +833,23 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                 hours[label] = 0
             }
 
-            receipts.forEach(r => {
+            filteredReceipts.forEach(r => {
                 const hour = new Date(r.created_at).getHours()
                 const label = `${hour.toString().padStart(2, '0')}:00`
                 if (hours[label] !== undefined) hours[label] += 1
             })
 
-            return Object.entries(hours).map(([label, value]) => ({ label, value }))
+            return Object.entries(hours).map(([label, value]) => ({ label, value, fill: item.color }))
         }
 
         if (item.metric === 'inventory_value') {
             const total = products.reduce((sum, p) => sum + (Number(p.price) * Number(p.quantity)), 0)
-            return [{ label: t('dashboard.inventory_value'), value: total }]
+            return [{ label: t('dashboard.inventory_value'), value: total, fill: item.color }]
         }
 
         if (item.metric === 'retention') {
             const customerMap: Record<string, number> = {}
-            receipts.forEach(r => {
+            filteredReceipts.forEach(r => {
                 const key = r.customer_phone || r.customer_name
                 if (key) {
                     customerMap[key] = (customerMap[key] || 0) + 1
@@ -709,9 +870,9 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
 
         // Standard timeline logic (existing)
         const groups: Record<string, number> = {}
-        const isLongRange = ['180d', '365d', 'all'].includes(dateRange)
+        const isLongRange = ['180d', '365d', 'all'].includes(effectiveRange)
 
-        if (dateRange === '30d') {
+        if (effectiveRange === '30d') {
             for (let i = 29; i >= 0; i--) {
                 const date = new Date()
                 date.setDate(date.getDate() - i)
@@ -719,7 +880,7 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                 groups[label] = 0
             }
         } else if (isLongRange) {
-            const monthsCount = dateRange === 'all' ? 12 : (parseInt(dateRange) / 30)
+            const monthsCount = effectiveRange === 'all' ? 12 : (parseInt(effectiveRange) / 30)
             for (let i = monthsCount - 1; i >= 0; i--) {
                 const date = new Date()
                 date.setMonth(date.getMonth() - i)
@@ -727,7 +888,8 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                 groups[label] = 0
             }
         } else {
-            for (let i = 89; i >= 0; i -= 3) {
+            // 7 days or default
+            for (let i = 6; i >= 0; i--) {
                 const date = new Date()
                 date.setDate(date.getDate() - i)
                 const label = date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' })
@@ -735,7 +897,7 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             }
         }
 
-        receipts.forEach(r => {
+        filteredReceipts.forEach(r => {
             const date = new Date(r.created_at)
             const label = isLongRange
                 ? date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { month: 'short', year: '2-digit' })
@@ -751,7 +913,7 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             }
         })
 
-        return Object.entries(groups).map(([label, value]) => ({ label, value }))
+        return Object.entries(groups).map(([label, value]) => ({ label, value, fill: item.color }))
     }, [receipts, dateRange, language, item])
 
     const totalValue = data.reduce((sum, d) => sum + d.value, 0)
@@ -831,10 +993,18 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
         if (pieData.length > 5 || (pieData.length === 0 && receipts.length > 0)) {
             // Fallback to Products vs Labor split if the metric doesn't slice well naturally
             pieData = [
-                { name: t('dashboard.products'), value: receipts.reduce((sum, r) => sum + Number(r.subtotal), 0), fill: item.color },
-                { name: t('dashboard.labor'), value: receipts.reduce((sum, r) => sum + Number(r.labor_cost), 0), fill: `${item.color}80` },
+                { name: t('dashboard.products'), value: receipts.reduce((sum, r) => sum + Number(r.subtotal), 0), fill: "#10b981" }, // Emerald
+                { name: t('dashboard.labor'), value: receipts.reduce((sum, r) => sum + Number(r.labor_cost), 0), fill: "#f59e0b" }, // Amber
             ]
         }
+
+        const pieConfig = { ...config }
+        pieData.forEach((d: any) => {
+            pieConfig[d.name] = {
+                label: d.name,
+                color: d.fill
+            }
+        })
 
         return (
             <Card className="h-full rounded-2xl border border-primary/10 shadow-sm bg-card/50 backdrop-blur-xs overflow-hidden flex flex-col group transition-all hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30">
@@ -850,7 +1020,7 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                             <div className="w-6 h-6 rounded-full border-2 border-primary/10 border-t-primary animate-spin" />
                         </div>
                     ) : (
-                        <ChartContainer config={config} className="h-full w-full aspect-auto">
+                        <ChartContainer config={pieConfig} className="h-full w-full aspect-auto">
                             <PieChart margin={{ top: 0, bottom: 20, left: 0, right: 0 }}>
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel className="rounded-xl border-border shadow-2xl backdrop-blur-md bg-card/80" />} />
                                 <Pie
@@ -862,7 +1032,7 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                                     strokeWidth={0}
                                     paddingAngle={2}
                                 />
-                                <ChartLegend content={<ChartLegendContent />} className="flex-wrap gap-1 text-[9px] font-bold pb-2" />
+                                <ChartLegend content={<ChartLegendContent nameKey="name" />} className="flex-wrap gap-1 text-[9px] font-bold pb-2" />
                             </PieChart>
                         </ChartContainer>
                     )}
@@ -895,7 +1065,14 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/10" />
-                                <XAxis dataKey="label" hide />
+                                <XAxis
+                                    dataKey="label"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={8}
+                                    minTickGap={32}
+                                    tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }}
+                                />
                                 <YAxis hide />
                                 <ChartTooltip content={<ChartTooltipContent className="rounded-xl border-border shadow-2xl backdrop-blur-md bg-card/80" />} />
                                 <Area type="monotone" dataKey="value" stroke={item.color} strokeWidth={3} fillOpacity={1} fill={`url(#grad-${item.id})`} />
@@ -988,7 +1165,30 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                                     ))}
                                 </Bar>
                             </BarChart>
+                        ) : item.type === 'line' ? (
+                            <LineChart data={data} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
+                                <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/20" />
+                                <XAxis
+                                    dataKey="label"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={8}
+                                    minTickGap={32}
+                                    tick={{ fill: 'var(--color-muted-foreground)', fontSize: 10 }}
+                                />
+                                <YAxis hide />
+                                <ChartTooltip content={<ChartTooltipContent className="rounded-xl border-border shadow-2xl backdrop-blur-md bg-card/80" />} />
+                                <Line
+                                    type="monotone"
+                                    dataKey="value"
+                                    stroke={item.color}
+                                    strokeWidth={3}
+                                    dot={{ fill: item.color, r: 4, strokeWidth: 0 }}
+                                    activeDot={{ r: 6 }}
+                                />
+                            </LineChart>
                         ) : (
+                            // Default Fallback
                             <AreaChart data={data} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
                                 <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted/20" />
                                 <XAxis dataKey="label" hide />
@@ -1000,83 +1200,172 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
                     </ChartContainer>
                 )}
             </CardContent>
-        </Card>
+        </Card >
     )
 }
 
-function AiInsightCard({ receipts, products, language }: { receipts: any[], products: any[], language: string }) {
+
+function AiInsightCard({
+    insight,
+    isLoading,
+    cooldown = 0,
+    onAsk,
+    onGenerate
+}: {
+    insight: AiInsight | null,
+    isLoading: boolean,
+    cooldown?: number,
+    onAsk: (q: string) => void,
+    onGenerate: () => void
+}) {
     const { t } = useLanguage()
-    const [insight, setInsight] = useState<string>('')
-    const [loading, setLoading] = useState(false)
+    const [query, setQuery] = useState('')
 
-    const handleGenerateInsight = async () => {
-        setLoading(true)
-        const summary = {
-            totalRevenue: receipts.reduce((sum, r) => sum + Number(r.total_amount), 0),
-            totalReceipts: receipts.length,
-            topProducts: products.sort((a, b) => b.quantity - a.quantity).slice(0, 3).map(p => p.name)
-        }
-        const result = await generateTradingInsight(summary)
-        setInsight(result || 'No insight available.')
-        setLoading(false)
-    }
-
-    if (!insight && !loading) {
+    if (!insight && !isLoading) {
         return (
-            <div className="mb-6">
+            <Card className="rounded-2xl border-dashed border-2 border-border/60 bg-muted/5 p-6 flex flex-col items-center justify-center text-center gap-4 min-h-[200px]">
+                <div className="p-4 rounded-full bg-violet-100 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400">
+                    <Sparkles className="h-6 w-6" />
+                </div>
+                <div className="space-y-1">
+                    <h3 className="font-bold text-lg">{t('dashboard.ai_insight_title')}</h3>
+                    <p className="text-sm text-muted-foreground max-w-[250px] mx-auto">
+                        กดปุ่มด้านล่างเพื่อเริ่มการวิเคราะห์ข้อมูลด้วย AI
+                    </p>
+                </div>
                 <Button
-                    variant="outline"
-                    className="w-full h-auto py-4 rounded-2xl border-primary/20 bg-primary/5 hover:bg-primary/10 gap-3 group relative overflow-hidden"
-                    onClick={handleGenerateInsight}
+                    onClick={onGenerate}
+                    disabled={cooldown > 0}
+                    className={cn(
+                        "rounded-full shadow-lg shadow-violet-200 dark:shadow-none px-8 h-12 font-black transition-all",
+                        cooldown > 0 ? "bg-muted text-muted-foreground border-border" : "bg-violet-600 hover:bg-violet-700 text-white"
+                    )}
                 >
-                    <div className="absolute inset-0 bg-linear-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
-                    <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-                    <div className="flex flex-col items-start text-left">
-                        <span className="font-bold text-primary text-sm flex items-center gap-2">
-                            {language === 'th' ? 'ขอคำแนะนำจาก AI (รอแปป)' : 'Ask AI for Insights'}
-                            <span className="text-[10px] bg-primary/20 px-1.5 py-0.5 rounded text-primary/80 font-mono">BETA</span>
-                        </span>
-                        <span className="text-xs text-muted-foreground font-normal">
-                            {language === 'th' ? 'วิเคราะห์ข้อมูลการขายและแนะนำกลยุทธ์' : 'Analyze sales data and suggest trading strategies'}
-                        </span>
-                    </div>
+                    {cooldown > 0 ? (
+                        <>
+                            <RotateCcw className="mr-2 h-4 w-4 animate-spin-reverse" />
+                            รออีก {cooldown} วินาที
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            วิเคราะห์ข้อมูล
+                        </>
+                    )}
                 </Button>
-            </div>
+            </Card>
         )
     }
 
     return (
-        <Card className="mb-6 rounded-2xl border-primary/20 bg-primary/5 shadow-sm overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                <Sparkles className="h-24 w-24 text-primary" />
-            </div>
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-primary/10">
-                        <Sparkles className="h-4 w-4 text-primary" />
+        <Card className="rounded-2xl border-none shadow-xl bg-linear-to-r from-violet-600/10 via-fuchsia-500/10 to-transparent overflow-hidden relative group">
+            <div className="absolute inset-0 bg-white/40 backdrop-blur-md dark:bg-black/20" />
+            <CardContent className="p-6 relative z-10">
+                <div className="flex items-start gap-4">
+                    <div className="p-3 bg-linear-to-br from-violet-500 to-fuchsia-600 rounded-2xl shadow-lg shadow-violet-500/30 shrink-0 animate-pulse">
+                        <Sparkles className="h-6 w-6 text-white" />
                     </div>
-                    <CardTitle className="text-sm font-bold text-primary">
-                        {language === 'th' ? 'คำแนะนำจาก AI' : 'AI Insights'}
-                    </CardTitle>
+                    <div className="space-y-4 flex-1">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-black uppercase tracking-widest text-violet-600 dark:text-violet-400">
+                                    {isLoading ? t('dashboard.analyzing_business') : t('dashboard.ai_insight_title')}
+                                </h3>
+                                {!isLoading && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={onGenerate}
+                                        className="h-8 w-8 rounded-full hover:bg-violet-100 dark:hover:bg-violet-900/40 text-violet-600"
+                                        title="วิเคราะห์ใหม่"
+                                    >
+                                        <RotateCcw className="h-4 w-4" />
+                                    </Button>
+                                )}
+                                {insight?.trend && (
+                                    <span className={cn(
+                                        "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ml-auto",
+                                        insight.trend === 'up' ? "bg-emerald-500/20 text-emerald-600" :
+                                            insight.trend === 'down' ? "bg-red-500/20 text-red-600" :
+                                                "bg-gray-500/20 text-gray-600"
+                                    )}>
+                                        {insight.trend === 'up' ? <TrendingUp className="h-3 w-3" /> :
+                                            insight.trend === 'down' ? <TrendingUp className="h-3 w-3 rotate-180" /> :
+                                                <Activity className="h-3 w-3" />}
+                                        {insight.trend}
+                                    </span>
+                                )}
+                            </div>
+
+                            {isLoading ? (
+                                <div className="space-y-2">
+                                    <div className="h-4 bg-muted/50 rounded w-3/4 animate-pulse" />
+                                    <div className="h-4 bg-muted/50 rounded w-1/2 animate-pulse" />
+                                </div>
+                            ) : (
+                                <div className="animate-in fade-in duration-500 space-y-3">
+                                    <p className="text-base font-semibold text-foreground/90 leading-relaxed">
+                                        {insight?.summary}
+                                    </p>
+                                    <div className="p-3 bg-card/50 rounded-xl border border-white/20 shadow-sm">
+                                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                                            <Sparkles className="h-3 w-3 text-violet-500" />
+                                            <span className="font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Recommendation:</span>
+                                            {insight?.recommendation}
+                                        </p>
+                                    </div>
+
+                                    {/* Prominent Action Button for Quota or Error scenarios */}
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={onGenerate}
+                                        disabled={cooldown > 0}
+                                        className={cn(
+                                            "w-full rounded-xl font-bold gap-2 py-5 transition-all text-sm",
+                                            cooldown > 0
+                                                ? "bg-muted text-muted-foreground border-border opacity-50 cursor-not-allowed"
+                                                : "bg-violet-600/10 hover:bg-violet-600/20 text-violet-600 border border-violet-600/20 shadow-sm"
+                                        )}
+                                    >
+                                        <RotateCcw className={cn("h-4 w-4", cooldown > 0 && "animate-spin-reverse")} />
+                                        {cooldown > 0 ? `รอโควตาอีก ${cooldown} วินาที` : "กดที่นี่เพื่อวิเคราะห์อีกครั้ง"}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Quick Ask Input */}
+                        {!isLoading && (
+                            <div className="relative animate-in slide-in-from-bottom-2 duration-500 delay-100">
+                                <input
+                                    type="text"
+                                    placeholder="ถามเรื่องข้อมูลยอดขายเพิ่มเติม..."
+                                    className="w-full pl-4 pr-10 py-2.5 rounded-xl bg-white/50 dark:bg-black/20 border border-violet-500/20 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 text-sm placeholder:text-muted-foreground/60 transition-all shadow-sm hover:shadow-md"
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && query.trim()) {
+                                            onAsk(query)
+                                            setQuery('')
+                                        }
+                                    }}
+                                />
+                                <button
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-violet-600/90 text-white hover:bg-violet-700 transition-colors shadow-sm"
+                                    onClick={() => {
+                                        if (query.trim()) {
+                                            onAsk(query)
+                                            setQuery('')
+                                        }
+                                    }}
+                                >
+                                    <ArrowUpRight className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
-                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full hover:bg-primary/10" onClick={() => setInsight('')}>
-                    <Trash2 className="h-3 w-3 text-muted-foreground" />
-                </Button>
-            </CardHeader>
-            <CardContent>
-                {loading ? (
-                    <div className="space-y-2 animate-pulse">
-                        <div className="h-4 bg-primary/10 rounded w-3/4" />
-                        <div className="h-4 bg-primary/10 rounded w-full" />
-                        <div className="h-4 bg-primary/10 rounded w-5/6" />
-                    </div>
-                ) : (
-                    <div className="prose prose-sm text-sm text-muted-foreground leading-relaxed">
-                        {insight.split('\n').map((line, i) => (
-                            <p key={i} className="mb-1">{line}</p>
-                        ))}
-                    </div>
-                )}
             </CardContent>
         </Card>
     )
@@ -1084,4 +1373,172 @@ function AiInsightCard({ receipts, products, language }: { receipts: any[], prod
 
 function CardFooter({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
     return <div className={`flex items-center p-6 pt-0 ${className}`} {...props}>{children}</div>
+}
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Textarea } from "@/components/ui/textarea"
+
+function AiChatDialog({
+    data,
+    t,
+    language,
+    isOpen,
+    onOpenChange,
+    autoQuery
+}: {
+    data: any[],
+    t: any,
+    language: string,
+    isOpen: boolean,
+    onOpenChange: (open: boolean) => void,
+    autoQuery?: string
+}) {
+    // Internal state for messages
+    const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([
+        { role: 'ai', content: t('dashboard.ai_chat_welcome') || 'Hello! Ask me anything about your sales data.' }
+    ])
+    const [input, setInput] = useState('')
+    const [isLoading, setIsLoading] = useState(false)
+    const messagesEndRef = useRef<HTMLDivElement>(null)
+    const hasAutoQueried = useRef(false)
+
+    // Handle auto-query when opened - PRE-FILL ONLY, DON'T AUTO-SEND
+    useEffect(() => {
+        if (isOpen && autoQuery && !hasAutoQueried.current) {
+            hasAutoQueried.current = true
+            setInput(autoQuery)
+        }
+        if (!isOpen) {
+            hasAutoQueried.current = false
+        }
+    }, [isOpen, autoQuery])
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
+
+    useEffect(() => {
+        if (isOpen) {
+            scrollToBottom()
+        }
+    }, [messages, isOpen])
+
+    const handleSend = async (textOverride?: string) => {
+        const textToSend = textOverride || input
+        if (!textToSend.trim() || isLoading) return
+
+        if (!textOverride) setInput('')
+        setMessages(prev => [...prev, { role: 'user', content: textToSend }])
+        setIsLoading(true)
+
+        try {
+            const { chatWithData } = await import('@/app/actions/ai')
+            const answer = await chatWithData(textToSend, data, language as 'th' | 'en')
+            setMessages(prev => [...prev, { role: 'ai', content: answer }])
+        } catch (error: any) {
+            console.error("Chat Error:", error)
+            const errorMsg = error?.message || (language === 'th' ? 'เกิดข้อผิดพลาด กรุณาลองใหม่' : 'Error occurred. Please try again.')
+            setMessages(prev => [...prev, { role: 'ai', content: errorMsg }])
+            toast.error(language === 'th' ? 'เกิดข้อผิดพลาดในการเชื่อมต่อ AI' : 'AI Connection Error')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            {/* Floating Trigger Button (only if closed) */}
+            {!isOpen && (
+                <DialogTrigger asChild>
+                    <Button
+                        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-linear-to-tr from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 border-2 border-white/20 z-50 animate-in zoom-in duration-300"
+                        onClick={() => onOpenChange(true)}
+                    >
+                        <Sparkles className="h-6 w-6 text-white" />
+                    </Button>
+                </DialogTrigger>
+            )}
+
+            <DialogContent className="sm:max-w-[400px] h-[600px] flex flex-col p-0 gap-0 rounded-3xl overflow-hidden border-border/50 bg-card/95 backdrop-blur-xl shadow-2xl">
+                <DialogHeader className="p-4 bg-muted/30 border-b border-border/40 shrink-0">
+                    <DialogTitle className="flex items-center gap-2 text-base font-black uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                        <Sparkles className="h-4 w-4" />
+                        AI Data Assistant
+                    </DialogTitle>
+                </DialogHeader>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-hide">
+                    {messages.map((m, i) => (
+                        <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <Avatar className="h-8 w-8 shrink-0 border border-border/50 bg-muted/50">
+                                {m.role === 'ai' ? (
+                                    <>
+                                        <AvatarImage src="/ai-avatar.png" />
+                                        <AvatarFallback className="bg-linear-to-br from-violet-500 to-fuchsia-600 text-white">
+                                            <Sparkles className="h-4 w-4" />
+                                        </AvatarFallback>
+                                    </>
+                                ) : (
+                                    <>
+                                        <AvatarFallback className="bg-muted text-muted-foreground">
+                                            <Users className="h-4 w-4" />
+                                        </AvatarFallback>
+                                    </>
+                                )}
+                            </Avatar>
+                            <div className={cn(
+                                "max-w-[80%] rounded-2xl px-4 py-3 text-sm font-medium shadow-sm whitespace-pre-wrap leading-relaxed",
+                                m.role === 'user'
+                                    ? "bg-violet-600 text-white rounded-tr-none"
+                                    : "bg-muted/50 border border-border/50 rounded-tl-none text-foreground/90"
+                            )}>
+                                {m.content}
+                            </div>
+                        </div>
+                    ))}
+                    {isLoading && (
+                        <div className="flex gap-3 justify-start">
+                            <Avatar className="h-8 w-8 shrink-0 border border-border/50 bg-muted/50">
+                                <AvatarFallback className="bg-linear-to-br from-violet-500 to-fuchsia-600 text-white">
+                                    <Sparkles className="h-4 w-4" />
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="bg-muted/50 border border-border/50 rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1.5 self-center">
+                                <span className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                <span className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                <span className="w-1.5 h-1.5 bg-violet-500 rounded-full animate-bounce"></span>
+                            </div>
+                        </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
+
+                <div className="p-3 bg-background/50 border-t border-border/40 shrink-0">
+                    <div className="relative">
+                        <Textarea
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault()
+                                    handleSend()
+                                }
+                            }}
+                            placeholder={t('dashboard.ai_chat_placeholder') || "Ask about your data..."}
+                            className="w-full pl-4 pr-12 py-3 rounded-xl bg-muted/50 border border-border/50 focus:border-violet-500 focus:ring-1 focus:ring-violet-500/50 resize-none text-sm min-h-[50px] max-h-[100px] scrollbar-hide shadow-none"
+                            rows={1}
+                        />
+                        <Button
+                            size="icon"
+                            className="absolute right-1 top-1 bottom-1 h-auto w-10 rounded-lg bg-violet-600 hover:bg-violet-700 text-white shadow-sm"
+                            onClick={() => handleSend()}
+                            disabled={isLoading || !input.trim()}
+                        >
+                            <TrendingUp className="h-4 w-4 rotate-90" />
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
 }

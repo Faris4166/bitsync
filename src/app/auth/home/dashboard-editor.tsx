@@ -10,9 +10,8 @@ import {
     Settings2, Trash2, Plus, LayoutGrid, Palette, BarChart3,
     PieChart, LineChart as LineIcon, AreaChart as AreaIcon,
     Type, GripVertical, Sparkles, TrendingUp, BarChart2, LayoutDashboard,
-    Check, ChevronUp, ChevronDown, Activity, Target, Wand2
+    Check, ChevronUp, ChevronDown, Activity, Target, Loader2
 } from 'lucide-react'
-import { generateChartConfig } from '@/app/actions/ai'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
@@ -166,43 +165,6 @@ const ChartItemSettings = ({ item, onUpdate, t, months }: {
 export default function DashboardEditor({ layout, onLayoutChange, onClose, hideHeader }: DashboardEditorProps) {
     const { t } = useLanguage()
 
-    const [aiPrompt, setAiPrompt] = React.useState('')
-    const [isAiGenerating, setIsAiGenerating] = React.useState(false)
-    const [isAiOpen, setIsAiOpen] = React.useState(false)
-
-    const handleAiGenerate = async () => {
-        if (!aiPrompt.trim()) return
-        setIsAiGenerating(true)
-        try {
-            const config = await generateChartConfig(aiPrompt)
-            if (config) {
-                const id = `item-${Date.now()}`
-                const newItem: DashboardItem = {
-                    id,
-                    type: config.type || 'stat',
-                    title: config.title || 'AI Generated Chart',
-                    color: config.color || '#3b82f6',
-                    metric: config.metric || 'total',
-                    x: 0,
-                    y: Infinity,
-                    w: config.type === 'stat' ? 3 : 4,
-                    h: config.type === 'stat' ? 2 : 4,
-                    compareType: config.compareType || undefined
-                }
-                onLayoutChange([...layout, newItem])
-                toast.success(t('dashboard.ai_chart_created'))
-                setIsAiOpen(false)
-                setAiPrompt('')
-            } else {
-                toast.error(t('dashboard.ai_failed'))
-            }
-        } catch (error) {
-            toast.error(t('dashboard.ai_failed'))
-        } finally {
-            setIsAiGenerating(false)
-        }
-    }
-
     const months = [
         { val: 0, label: t('dashboard.jan') },
         { val: 1, label: t('dashboard.feb') },
@@ -274,7 +236,6 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
             {!hideHeader && (
                 <div className="space-y-6">
                     {/* Template Gallery */}
-                    {/* Template Gallery */}
                     <div className="bg-primary/5 rounded-3xl border border-primary/10 overflow-hidden">
                         <div className="p-6 border-b border-primary/10 bg-primary/5 flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -286,60 +247,10 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
                                     <p className="text-[10px] text-muted-foreground font-bold">{t('dashboard.why_this_chart')}</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Dialog open={isAiOpen} onOpenChange={setIsAiOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" className="rounded-2xl px-4 font-black border-primary/20 text-primary hover:bg-primary/5 gap-2">
-                                            <Wand2 className="h-4 w-4" />
-                                            MAGIC AI
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-[425px] rounded-3xl">
-                                        <DialogHeader>
-                                            <DialogTitle className="flex items-center gap-2">
-                                                <Sparkles className="h-5 w-5 text-primary" />
-                                                MAGIC AI CHART
-                                            </DialogTitle>
-                                            <DialogDescription>
-                                                {t('dashboard.ai_prompt_desc')}
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="space-y-4 py-4">
-                                            <div className="space-y-2">
-                                                <Label>{t('dashboard.describe_chart')}</Label>
-                                                <Input
-                                                    placeholder="e.g., Red bar chart showing monthly revenue"
-                                                    value={aiPrompt}
-                                                    onChange={(e) => setAiPrompt(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleAiGenerate()}
-                                                />
-                                            </div>
-                                            <Button
-                                                onClick={handleAiGenerate}
-                                                disabled={isAiGenerating}
-                                                className="w-full rounded-xl font-bold"
-                                            >
-                                                {isAiGenerating ? (
-                                                    <>
-                                                        <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                                                        Generating...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Wand2 className="mr-2 h-4 w-4" />
-                                                        Generate Chart
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
-                                <Button variant="default" onClick={onClose} className="rounded-2xl px-8 font-black shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-                                    DONE
-                                </Button>
-                            </div>
+                            <Button variant="default" onClick={onClose} className="rounded-2xl px-8 font-black shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                                DONE
+                            </Button>
                         </div>
-
 
                         <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
                             {[
@@ -400,26 +311,31 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
 
                     {/* Quick Guide */}
                     <div className="flex flex-wrap items-center gap-4 text-[10px] bg-muted/30 p-4 rounded-2xl border border-border/50">
-                        <p className="font-black text-muted-foreground uppercase tracking-widest mr-2">Advanced:</p>
-                        <Button variant="outline" size="sm" onClick={() => addItem('stat')} className="rounded-xl border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-all">
-                            <Plus className="mr-1 h-3 w-3" /> Custom Stat
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => addItem('area')} className="rounded-xl font-bold transition-all">
-                            <Plus className="mr-1 h-3 w-3" /> Custom Area
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => addItem('pie')} className="rounded-xl font-bold transition-all">
-                            <Plus className="mr-1 h-3 w-3" /> Custom Pie
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => addItem('radar')} className="rounded-xl font-bold transition-all">
-                            <Plus className="mr-1 h-3 w-3" /> Custom Radar
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => addItem('radial')} className="rounded-xl font-bold transition-all">
-                            <Plus className="mr-1 h-3 w-3" /> Custom Radial
-                        </Button>
+                        <div className="flex-1 flex items-center gap-2">
+                            <p className="font-black text-muted-foreground uppercase tracking-widest mr-2">Advanced:</p>
+                            <Button variant="outline" size="sm" onClick={() => addItem('stat')} className="rounded-xl border-emerald-500/20 hover:bg-emerald-500/10 hover:text-emerald-500 font-bold transition-all">
+                                <Plus className="mr-1 h-3 w-3" /> Custom Stat
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => addItem('area')} className="rounded-xl font-bold transition-all">
+                                <Plus className="mr-1 h-3 w-3" /> Custom Area
+                            </Button>
+                        </div>
+
+                        {/* Magic AI Button */}
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button className="rounded-xl bg-linear-to-r from-violet-500 to-fuchsia-600 hover:from-violet-600 hover:to-fuchsia-700 text-white font-black shadow-lg shadow-violet-500/20 border-0">
+                                    <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
+                                    MAGIC AI
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[500px] rounded-3xl border-0 bg-card/95 backdrop-blur-xl shadow-2xl">
+                                <MagicAiHandler onGenerate={(item) => onLayoutChange([...layout, item])} t={t} layout={layout} />
+                            </DialogContent>
+                        </Dialog>
                     </div>
-                </div >
-            )
-            }
+                </div>
+            )}
 
             <ResponsiveGridLayout
                 className="layout"
@@ -498,6 +414,119 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
                     </div>
                 ))}
             </ResponsiveGridLayout>
-        </div >
+        </div>
+    )
+}
+
+function MagicAiHandler({ onGenerate, t, layout }: { onGenerate: (item: DashboardItem) => void, t: any, layout: DashboardItem[] }) {
+    const [prompt, setPrompt] = React.useState('')
+    const [isLoading, setIsLoading] = React.useState(false)
+    const [error, setError] = React.useState('')
+
+    // Import server action dynamically to avoid build issues if not present yet
+    const generateChartIndex = async () => {
+        if (!prompt.trim()) return
+        setIsLoading(true)
+        setError('')
+        try {
+            const { generateChartConfig } = await import('@/app/actions/ai')
+            const config = await generateChartConfig(prompt, layout, 'en') // Defaulting to EN for config generation context, or use language prop
+
+            if (config) {
+                const id = `item-${Date.now()}`
+                const newItem: DashboardItem = {
+                    id,
+                    ...config,
+                    x: 0,
+                    y: Infinity,
+                    w: config.type === 'stat' ? 3 : 4,
+                    h: config.type === 'stat' ? 2 : 4
+                }
+                onGenerate(newItem)
+                setPrompt('')
+                // Close dialog implicitly by parent if needed, or show success
+                toast.success(t('dashboard.ai_chart_created'))
+            } else {
+                setError('Could not generate chart. Please try a different description.')
+            }
+        } catch (err) {
+            console.error(err)
+            setError('AI Service unavailable.')
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    return (
+        <div className="p-6 space-y-6">
+            <div className="space-y-2 text-center">
+                <div className="mx-auto w-12 h-12 bg-linear-to-br from-violet-500 to-fuchsia-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30 mb-4 animate-pulse">
+                    <Sparkles className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-xl font-black uppercase tracking-tight bg-clip-text text-transparent bg-linear-to-r from-violet-600 to-fuchsia-600">
+                    Magic AI Chart
+                </h3>
+                <p className="text-muted-foreground text-xs font-medium">
+                    {t('dashboard.ai_chart_desc')}
+                </p>
+            </div>
+
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Describe your chart</Label>
+                    <textarea
+                        className="w-full h-24 rounded-xl bg-muted/30 border-border/50 p-4 text-sm font-medium focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 resize-none"
+                        placeholder="e.g., Show me a pie chart of top selling products..."
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault()
+                                generateChartIndex()
+                            }
+                        }}
+                    />
+                </div>
+
+                {error && (
+                    <p className="text-red-500 text-xs font-bold bg-red-500/10 p-2 rounded-lg text-center">
+                        {error}
+                    </p>
+                )}
+
+                <Button
+                    className="w-full rounded-xl h-12 bg-linear-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 font-bold text-white shadow-lg shadow-violet-500/25"
+                    onClick={generateChartIndex}
+                    disabled={isLoading || !prompt.trim()}
+                >
+                    {isLoading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Generating Magic...
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Generate Chart
+                        </>
+                    )}
+                </Button>
+            </div>
+
+            <div className="bg-muted/30 rounded-xl p-3">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">Try asking:</p>
+                <div className="flex flex-wrap gap-2">
+                    {["Pie chart of categories", "Red bar chart for total revenue", "Stat card for low stock"].map(ex => (
+                        <button
+                            key={ex}
+                            className="bg-background border border-border/50 rounded-lg px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:border-violet-500/30 transition-colors"
+                            onClick={() => setPrompt(ex)}
+                        >
+                            {ex}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
     )
 }
