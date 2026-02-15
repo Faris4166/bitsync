@@ -242,12 +242,12 @@ export default function Dashboard() {
         } else if (profileData && !layout.length) {
             // Default layout if none exists
             setLayout([
-                { id: 'income-trend', type: 'area', title: t('dashboard.income_trend'), desc: 'รายได้ตามช่วงเวลา', color: '#3b82f6', metric: 'total', x: 0, y: 0, w: 8, h: 4 },
-                { id: 'distribution', type: 'pie', title: t('dashboard.income_distribution'), desc: 'แบ่งตามหมวดหมู่', color: '#10b981', metric: 'products', x: 8, y: 0, w: 4, h: 4 },
-                { id: 'stat-total', type: 'stat', title: t('dashboard.total_income'), desc: 'รายได้รวม', color: '#3b82f6', metric: 'total', x: 0, y: 4, w: 3, h: 2 },
-                { id: 'stat-products', type: 'stat', title: t('dashboard.product_income'), desc: 'จากสินค้า', color: '#10b981', metric: 'products', x: 3, y: 4, w: 3, h: 2 },
-                { id: 'stat-labor', type: 'stat', title: t('dashboard.labor_income'), desc: 'จากค่าแรง', color: '#f59e0b', metric: 'labor', x: 6, y: 4, w: 3, h: 2 },
-                { id: 'stat-orders', type: 'stat', title: t('dashboard.receipt_count'), desc: 'จำนวนออเดอร์', color: '#10b981', metric: 'count', x: 9, y: 4, w: 3, h: 2 },
+                { id: 'income-trend', type: 'area', title: t('dashboard.income_trend'), desc: 'รายได้ตามช่วงเวลา', color: '#3b82f6', metric: 'total', x: 0, y: 0, w: 8, h: 5 },
+                { id: 'distribution', type: 'pie', title: t('dashboard.income_distribution'), desc: 'แบ่งตามหมวดหมู่', color: '#10b981', metric: 'products', x: 8, y: 0, w: 4, h: 5 },
+                { id: 'stat-total', type: 'stat', title: t('dashboard.total_income'), desc: 'รายได้รวม', color: '#3b82f6', metric: 'total', x: 0, y: 5, w: 3, h: 2 },
+                { id: 'stat-products', type: 'stat', title: t('dashboard.product_income'), desc: 'จากสินค้า', color: '#10b981', metric: 'products', x: 3, y: 5, w: 3, h: 2 },
+                { id: 'stat-labor', type: 'stat', title: t('dashboard.labor_income'), desc: 'จากค่าแรง', color: '#f59e0b', metric: 'labor', x: 6, y: 5, w: 3, h: 2 },
+                { id: 'stat-orders', type: 'stat', title: t('dashboard.receipt_count'), desc: 'จำนวนออเดอร์', color: '#10b981', metric: 'count', x: 9, y: 5, w: 3, h: 2 },
             ])
         }
     }, [profileData, t])
@@ -272,12 +272,12 @@ export default function Dashboard() {
 
     const resetToDefault = () => {
         const defaultLayout: DashboardItem[] = [
-            { id: 'income-trend', type: 'area', title: t('dashboard.income_trend'), desc: 'รายได้ตามช่วงเวลา', color: '#3b82f6', metric: 'total', x: 0, y: 0, w: 8, h: 4 },
-            { id: 'distribution', type: 'pie', title: t('dashboard.income_distribution'), desc: 'แบ่งตามหมวดหมู่', color: '#10b981', metric: 'products', x: 8, y: 0, w: 4, h: 4 },
-            { id: 'stat-total', type: 'stat', title: t('dashboard.total_income'), desc: 'รายได้รวม', color: '#3b82f6', metric: 'total', x: 0, y: 4, w: 3, h: 2 },
-            { id: 'stat-products', type: 'stat', title: t('dashboard.product_income'), desc: 'จากสินค้า', color: '#10b981', metric: 'products', x: 3, y: 4, w: 3, h: 2 },
-            { id: 'stat-labor', type: 'stat', title: t('dashboard.labor_income'), desc: 'จากค่าแรง', color: '#f59e0b', metric: 'labor', x: 6, y: 4, w: 3, h: 2 },
-            { id: 'stat-orders', type: 'stat', title: t('dashboard.receipt_count'), desc: 'จำนวนออเดอร์', color: '#10b981', metric: 'count', x: 9, y: 4, w: 3, h: 2 },
+            { id: 'income-trend', type: 'area', title: t('dashboard.income_trend'), desc: 'รายได้ตามช่วงเวลา', color: '#3b82f6', metric: 'total', x: 0, y: 0, w: 8, h: 5 },
+            { id: 'distribution', type: 'pie', title: t('dashboard.income_distribution'), desc: 'แบ่งตามหมวดหมู่', color: '#10b981', metric: 'products', x: 8, y: 0, w: 4, h: 5 },
+            { id: 'stat-total', type: 'stat', title: t('dashboard.total_income'), desc: 'รายได้รวม', color: '#3b82f6', metric: 'total', x: 0, y: 5, w: 3, h: 2 },
+            { id: 'stat-products', type: 'stat', title: t('dashboard.product_income'), desc: 'จากสินค้า', color: '#10b981', metric: 'products', x: 3, y: 5, w: 3, h: 2 },
+            { id: 'stat-labor', type: 'stat', title: t('dashboard.labor_income'), desc: 'จากค่าแรง', color: '#f59e0b', metric: 'labor', x: 6, y: 5, w: 3, h: 2 },
+            { id: 'stat-orders', type: 'stat', title: t('dashboard.receipt_count'), desc: 'จำนวนออเดอร์', color: '#10b981', metric: 'count', x: 9, y: 5, w: 3, h: 2 },
         ]
         setLayout(defaultLayout)
         toast.success('รีเซ็ตค่าเริ่มต้นเรียบร้อย')
@@ -305,8 +305,8 @@ export default function Dashboard() {
             metric: 'total',
             x: 0,
             y: Infinity,
-            w: type === 'stat' ? 3 : 4,
-            h: type === 'stat' ? 2 : 4
+            w: type === 'stat' ? 3 : 6,
+            h: type === 'stat' ? 2 : 5
         }
         setLayout([...layout, newItem])
         toast.info(`Added ${type} chart`)
@@ -586,10 +586,10 @@ export default function Dashboard() {
                         layout={layout}
                         onLayoutChange={(newItems) => setLayout(newItems)}
                         onClose={() => {
-                            setIsEditMode(false)
                             saveLayout(layout)
+                            setIsEditMode(false)
                         }}
-                        hideHeader
+                        mutateProfile={mutateProfile}
                     />
                 </div>
             ) : (
@@ -599,7 +599,7 @@ export default function Dashboard() {
                         layouts={{ lg: layout.map(i => ({ i: i.id, x: i.x, y: i.y, w: i.w, h: i.h })) }}
                         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                         cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-                        rowHeight={100}
+                        rowHeight={120}
                         isDraggable={false}
                         isResizable={false}
                         margin={[20, 20]}
@@ -780,8 +780,8 @@ function DashboardCard({ item, receipts, products, dateRange, mounted }: { item:
             if (item.sortBy === 'label') result.sort((a, b) => a.label.localeCompare(b.label))
             else result.sort((a, b) => b.value - a.value) // Default sort by value desc
 
-            // Limit (Default to 5 for comparison, 10 for category/pie)
-            const defaultLimit = item.metric === 'products' ? 5 : 10
+            // Limit (Default to 10 for all charts)
+            const defaultLimit = 10
             const limit = item.limit || defaultLimit
             result = result.slice(0, limit)
 
@@ -1394,8 +1394,8 @@ function AiChatDialog({
     autoQuery?: string
 }) {
     // Internal state for messages
-    const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([
-        { role: 'ai', content: t('dashboard.ai_chat_welcome') || 'Hello! Ask me anything about your sales data.' }
+    const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
+        { role: 'assistant', content: t('dashboard.ai_chat_welcome') || 'Hello! Ask me anything about your sales data.' }
     ])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -1428,17 +1428,37 @@ function AiChatDialog({
         if (!textToSend.trim() || isLoading) return
 
         if (!textOverride) setInput('')
-        setMessages(prev => [...prev, { role: 'user', content: textToSend }])
+        const newMessages = [...messages, { role: 'user' as const, content: textToSend }]
+        setMessages([...newMessages, { role: 'assistant', content: '' }])
         setIsLoading(true)
 
         try {
-            const { chatWithData } = await import('@/app/actions/ai')
-            const answer = await chatWithData(textToSend, data, language as 'th' | 'en')
-            setMessages(prev => [...prev, { role: 'ai', content: answer }])
+            const { streamChatWithData } = await import('@/app/actions/ai')
+
+            const history = newMessages.slice(1).map(m => ({
+                role: m.role,
+                content: m.content
+            }))
+
+            const response = await streamChatWithData(textToSend, data, language as 'th' | 'en', history)
+
+            setMessages(prev => {
+                const last = prev[prev.length - 1]
+                if (last && last.role === 'assistant') {
+                    return [...prev.slice(0, -1), { ...last, content: response }]
+                }
+                return prev
+            })
         } catch (error: any) {
             console.error("Chat Error:", error)
             const errorMsg = error?.message || (language === 'th' ? 'เกิดข้อผิดพลาด กรุณาลองใหม่' : 'Error occurred. Please try again.')
-            setMessages(prev => [...prev, { role: 'ai', content: errorMsg }])
+            setMessages(prev => {
+                const last = prev[prev.length - 1]
+                if (last && last.role === 'assistant' && !last.content) {
+                    return [...prev.slice(0, -1), { role: 'assistant', content: errorMsg }]
+                }
+                return [...prev, { role: 'assistant', content: errorMsg }]
+            })
             toast.error(language === 'th' ? 'เกิดข้อผิดพลาดในการเชื่อมต่อ AI' : 'AI Connection Error')
         } finally {
             setIsLoading(false)
@@ -1461,9 +1481,9 @@ function AiChatDialog({
 
             <DialogContent className="sm:max-w-[400px] h-[600px] flex flex-col p-0 gap-0 rounded-3xl overflow-hidden border-border/50 bg-card/95 backdrop-blur-xl shadow-2xl">
                 <DialogHeader className="p-4 bg-muted/30 border-b border-border/40 shrink-0">
-                    <DialogTitle className="flex items-center gap-2 text-base font-black uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                    <DialogTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-violet-600 dark:text-violet-400">
                         <Sparkles className="h-4 w-4" />
-                        AI Data Assistant
+                        AI Partner {isLoading && <Loader2 className="h-3 w-3 animate-spin ml-2" />}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -1471,7 +1491,7 @@ function AiChatDialog({
                     {messages.map((m, i) => (
                         <div key={i} className={`flex gap-3 ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                             <Avatar className="h-8 w-8 shrink-0 border border-border/50 bg-muted/50">
-                                {m.role === 'ai' ? (
+                                {m.role === 'assistant' ? (
                                     <>
                                         <AvatarImage src="/ai-avatar.png" />
                                         <AvatarFallback className="bg-linear-to-br from-violet-500 to-fuchsia-600 text-white">
@@ -1487,7 +1507,7 @@ function AiChatDialog({
                                 )}
                             </Avatar>
                             <div className={cn(
-                                "max-w-[80%] rounded-2xl px-4 py-3 text-sm font-medium shadow-sm whitespace-pre-wrap leading-relaxed",
+                                "max-w-[80%] rounded-2xl px-4 py-3 text-sm font-medium shadow-sm whitespace-pre-wrap leading-relaxed transition-all duration-300",
                                 m.role === 'user'
                                     ? "bg-violet-600 text-white rounded-tr-none"
                                     : "bg-muted/50 border border-border/50 rounded-tl-none text-foreground/90"
@@ -1497,7 +1517,7 @@ function AiChatDialog({
                         </div>
                     ))}
                     {isLoading && (
-                        <div className="flex gap-3 justify-start">
+                        <div className="flex gap-3 justify-start animate-in fade-in duration-300">
                             <Avatar className="h-8 w-8 shrink-0 border border-border/50 bg-muted/50">
                                 <AvatarFallback className="bg-linear-to-br from-violet-500 to-fuchsia-600 text-white">
                                     <Sparkles className="h-4 w-4" />
@@ -1530,11 +1550,11 @@ function AiChatDialog({
                         />
                         <Button
                             size="icon"
-                            className="absolute right-1 top-1 bottom-1 h-auto w-10 rounded-lg bg-violet-600 hover:bg-violet-700 text-white shadow-sm"
+                            className="absolute right-1.5 bottom-1.5 h-8 w-8 rounded-lg bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-all active:scale-95"
                             onClick={() => handleSend()}
                             disabled={isLoading || !input.trim()}
                         >
-                            <TrendingUp className="h-4 w-4 rotate-90" />
+                            <ArrowUpRight className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>

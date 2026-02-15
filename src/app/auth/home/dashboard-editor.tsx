@@ -32,6 +32,7 @@ interface DashboardEditorProps {
     onLayoutChange: (newItems: DashboardItem[]) => void
     onClose: () => void
     hideHeader?: boolean
+    mutateProfile?: () => void
 }
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
@@ -162,7 +163,7 @@ const ChartItemSettings = ({ item, onUpdate, t, months }: {
     );
 };
 
-export default function DashboardEditor({ layout, onLayoutChange, onClose, hideHeader }: DashboardEditorProps) {
+export default function DashboardEditor({ layout, onLayoutChange, onClose, hideHeader, mutateProfile }: DashboardEditorProps) {
     const { t } = useLanguage()
 
     const months = [
@@ -180,21 +181,24 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
         { val: 11, label: t('dashboard.dec') },
     ]
 
+    // Removed auto-save to prevent infinite loop
+    // Save only happens when user clicks SAVE button or DONE button
+
     const handleLayoutChange = (newLayout: readonly any[]) => {
-        const updatedItems = layout.map(item => {
-            const layoutItem = newLayout.find(l => l.i === item.id)
-            if (layoutItem) {
+        const updatedLayout = layout.map(item => {
+            const gridItem = newLayout.find(l => l.i === item.id)
+            if (gridItem) {
                 return {
                     ...item,
-                    x: layoutItem.x,
-                    y: layoutItem.y,
-                    w: layoutItem.w,
-                    h: layoutItem.h
+                    x: gridItem.x,
+                    y: gridItem.y,
+                    w: gridItem.w,
+                    h: gridItem.h
                 }
             }
             return item
         })
-        onLayoutChange(updatedItems)
+        onLayoutChange(updatedLayout)
     }
 
     const addItem = (type: ChartType) => {
@@ -208,8 +212,8 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
             metric: 'total',
             x: 0,
             y: Infinity,
-            w: type === 'stat' ? 3 : 4,
-            h: type === 'stat' ? 2 : 4
+            w: type === 'stat' ? 3 : 6,
+            h: type === 'stat' ? 2 : 5
         }
         onLayoutChange([...layout, newItem])
     }
@@ -248,9 +252,39 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
                                     <p className="text-[10px] text-muted-foreground font-bold">{t('dashboard.why_this_chart')}</p>
                                 </div>
                             </div>
-                            <Button variant="default" onClick={onClose} className="rounded-2xl px-8 font-black shadow-xl shadow-primary/20 hover:scale-105 transition-all">
-                                DONE
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        console.log('💾 Manual Save')
+                                        console.log('Charts:', layout.length)
+                                        layout.forEach((c, i) => console.log(`${i + 1}. ${c.title}: x=${c.x}, y=${c.y}, w=${c.w}, h=${c.h}`))
+                                        console.log('SQL: SELECT dashboard_config FROM profiles WHERE clerk_id = YOUR_ID;')
+
+                                        fetch('/api/profile', {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ dashboard_config: layout })
+                                        })
+                                            .then(res => {
+                                                console.log('Response:', res.status)
+                                                if (res.ok && mutateProfile) {
+                                                    mutateProfile()
+                                                    toast.success('บันทึกสำเร็จ!')
+                                                }
+                                                return res.json()
+                                            })
+                                            .then(d => console.log('Data:', d))
+                                            .catch(e => console.error('Error:', e))
+                                    }}
+                                    className="rounded-2xl px-6 font-black"
+                                >
+                                    💾 SAVE
+                                </Button>
+                                <Button variant="default" onClick={onClose} className="rounded-2xl px-8 font-black shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+                                    DONE
+                                </Button>
+                            </div>
                         </div>
 
                         <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -281,8 +315,8 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
                                                 color: temp.color,
                                                 metric: temp.metric as any,
                                                 x: 0, y: Infinity,
-                                                w: temp.type === 'stat' ? 3 : temp.forceCompare ? 6 : 4,
-                                                h: temp.type === 'stat' ? 2 : 4,
+                                                w: temp.type === 'stat' ? 3 : temp.forceCompare ? 8 : 6,
+                                                h: temp.type === 'stat' ? 2 : 5,
                                                 compareType: temp.forceCompare ? 'month' : 'none',
                                                 compareMonth1: currentMonth,
                                                 compareMonth2: prevMonth
@@ -297,6 +331,17 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
                                             <span className="text-[11px] font-black uppercase tracking-tighter leading-tight">{temp.title}</span>
                                         </div>
                                         <p className="text-[9px] font-bold text-muted-foreground leading-relaxed">{temp.desc}</p>
+                                        {/* Visual Preview Hint */}
+                                        <div className="mt-2 p-2 bg-muted/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <p className="text-[8px] font-bold text-muted-foreground/80">
+                                                {temp.type === 'area' && '📈 กราฟเส้นแสดงแนวโน้มตามเวลา'}
+                                                {temp.type === 'pie' && '🍰 กราฟวงกลมแสดงสัดส่วน'}
+                                                {temp.type === 'bar' && '📊 กราฟแท่งเปรียบเทียบข้อมูล'}
+                                                {temp.type === 'stat' && '🔢 ตัวเลขสถิติขนาดใหญ่'}
+                                                {temp.type === 'radar' && '🎯 กราฟเรดาร์หลายมิติ'}
+                                                {temp.type === 'radial' && '⭕ กราฟวงกลมความคืบหน้า'}
+                                            </p>
+                                        </div>
                                         {exists && (
                                             <div className="absolute top-2 right-2 p-1 bg-primary/20 rounded-full">
                                                 <Check className="h-3 w-3 text-primary" />
@@ -342,12 +387,16 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
             <ResponsiveGridLayout
                 className="layout"
                 layouts={{ lg: layout.map(i => ({ i: i.id, x: i.x, y: i.y, w: i.w, h: i.h })) }}
+                onLayoutChange={handleLayoutChange}
                 breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
                 cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-                rowHeight={100}
+                rowHeight={120}
+                isDraggable={true}
+                isResizable={true}
                 draggableHandle=".drag-handle"
-                onLayoutChange={(current) => handleLayoutChange(current)}
+                resizeHandles={['se']}
                 margin={[20, 20]}
+                containerPadding={[0, 0]}
             >
                 {layout.map(item => (
                     <div key={item.id} className="relative group">
@@ -441,8 +490,8 @@ function MagicAiHandler({ onGenerate, t, layout }: { onGenerate: (item: Dashboar
                     ...config,
                     x: 0,
                     y: Infinity,
-                    w: config.type === 'stat' ? 3 : 4,
-                    h: config.type === 'stat' ? 2 : 4
+                    w: config.type === 'stat' ? 3 : 6,
+                    h: config.type === 'stat' ? 2 : 5
                 }
                 onGenerate(newItem)
                 setPrompt('')
@@ -461,17 +510,17 @@ function MagicAiHandler({ onGenerate, t, layout }: { onGenerate: (item: Dashboar
 
     return (
         <div className="p-6 space-y-6">
-            <div className="space-y-2 text-center">
+            <DialogHeader>
                 <div className="mx-auto w-12 h-12 bg-linear-to-br from-violet-500 to-fuchsia-600 rounded-2xl flex items-center justify-center shadow-lg shadow-violet-500/30 mb-4 animate-pulse">
                     <Sparkles className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-xl font-black uppercase tracking-tight bg-clip-text text-transparent bg-linear-to-r from-violet-600 to-fuchsia-600">
+                <DialogTitle className="text-xl font-black uppercase tracking-tight bg-clip-text text-transparent bg-linear-to-r from-violet-600 to-fuchsia-600 text-center">
                     Magic AI Chart
-                </h3>
-                <p className="text-muted-foreground text-xs font-medium">
+                </DialogTitle>
+                <p className="text-muted-foreground text-xs font-medium text-center">
                     {t('dashboard.ai_chart_desc')}
                 </p>
-            </div>
+            </DialogHeader>
 
             <div className="space-y-4">
                 <div className="space-y-2">
@@ -516,18 +565,30 @@ function MagicAiHandler({ onGenerate, t, layout }: { onGenerate: (item: Dashboar
             </div>
 
             <div className="bg-muted/30 rounded-xl p-3">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">Try asking:</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">💡 ตัวอย่างคำสั่ง:</p>
                 <div className="flex flex-wrap gap-2">
-                    {["Pie chart of categories", "Red bar chart for total revenue", "Stat card for low stock"].map(ex => (
+                    {[
+                        "📈 กราฟแนวโน้มรายได้",
+                        "🍰 สัดส่วนรายได้ตามหมวดหมู่",
+                        "📊 เปรียบเทียบรายได้แต่ละเดือน",
+                        "🔢 รายได้รวมทั้งหมด",
+                        "🎯 กราฟเรดาร์ประสิทธิภาพ",
+                        "⭕ ความคืบหน้าเป้าหมาย",
+                        "📉 กราฟเส้นยอดขาย",
+                        "🏆 สินค้าขายดี Top 10"
+                    ].map(ex => (
                         <button
                             key={ex}
                             className="bg-background border border-border/50 rounded-lg px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:border-violet-500/30 transition-colors"
-                            onClick={() => setPrompt(ex)}
+                            onClick={() => setPrompt(ex.replace(/^[^\s]+\s/, ''))}
                         >
                             {ex}
                         </button>
                     ))}
                 </div>
+                <p className="text-[9px] text-muted-foreground/60 mt-2 italic">
+                    💬 บอก AI ว่าต้องการกราฟแบบไหน จะสร้างให้อัตโนมัติ!
+                </p>
             </div>
         </div>
     )

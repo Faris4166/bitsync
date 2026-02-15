@@ -107,22 +107,50 @@ export default function ReceiptForm() {
         if (!customer.name) return toast.error(t('receipt.error_name'))
         if (selectedItems.length === 0) return toast.error(t('receipt.error_items'))
 
-        const draftData = {
-            customer_name: customer.name,
-            customer_phone: customer.phone,
-            items: selectedItems,
-            labor_cost: laborCost,
-            subtotal,
-            total_amount: total,
-            payment_info: {
-                selected_ids: selectedPayments
-            }
-        }
+        setIsLoading(true)
 
-        // Save to session storage instead of database
-        sessionStorage.setItem('receipt_draft', JSON.stringify(draftData))
-        router.push('/auth/receipt/preview')
-    }, [customer, selectedItems, laborCost, subtotal, total, selectedPayments, router])
+        try {
+            // Auto-save new products to database for chart tracking
+            for (const item of selectedItems) {
+                // Only save if it's a manually entered product (no ID)
+                if (!item.id && item.name && item.price > 0) {
+                    try {
+                        // Create new product in database
+                        await fetch('/api/products', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: item.name,
+                                price: item.price,
+                                quantity: 0,
+                                track_stock: false,
+                                category: 'อื่นๆ'
+                            })
+                        })
+                    } catch (err) {
+                        console.error('Failed to auto-save product:', err)
+                    }
+                }
+            }
+
+            const draftData = {
+                customer_name: customer.name,
+                customer_phone: customer.phone,
+                items: selectedItems,
+                labor_cost: laborCost,
+                subtotal,
+                total_amount: total,
+                payment_info: {
+                    selected_ids: selectedPayments
+                }
+            }
+
+            sessionStorage.setItem('receipt_draft', JSON.stringify(draftData))
+            router.push('/auth/receipt/preview')
+        } finally {
+            setIsLoading(false)
+        }
+    }, [customer, selectedItems, laborCost, subtotal, total, selectedPayments, router, t])
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 pb-20">

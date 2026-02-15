@@ -17,28 +17,30 @@ export function LandingHero({ isSignedIn }: { isSignedIn: boolean }) {
                 <div className="hidden md:block">
                     <motion.div
                         animate={{
-                            scale: [1, 1.2, 1],
-                            x: [0, 100, 0],
-                            y: [0, 50, 0],
+                            scale: [1, 1.1, 1],
+                            x: [0, 50, 0],
+                            y: [0, 25, 0],
                         }}
                         transition={{
-                            duration: 20,
+                            duration: 30, // Increased duration to reduce CPU load
                             repeat: Infinity,
                             ease: "linear",
                         }}
+                        style={{ willChange: 'transform' }} // Optimization for better compositing
                         className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-primary/20 dark:bg-primary/30 rounded-full blur-[80px] lg:blur-[120px] opacity-70 dark:opacity-50"
                     />
                     <motion.div
                         animate={{
-                            scale: [1, 1.3, 1],
-                            x: [0, -80, 0],
-                            y: [0, 100, 0],
+                            scale: [1, 1.15, 1],
+                            x: [0, -40, 0],
+                            y: [0, 50, 0],
                         }}
                         transition={{
-                            duration: 25,
+                            duration: 35, // Increased duration
                             repeat: Infinity,
                             ease: "linear",
                         }}
+                        style={{ willChange: 'transform' }}
                         className="absolute top-[20%] -right-[10%] w-[40%] h-[40%] bg-primary/20 dark:bg-primary/30 rounded-full blur-[60px] lg:blur-[100px] opacity-70 dark:opacity-40"
                     />
                 </div>

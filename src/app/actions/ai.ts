@@ -128,16 +128,28 @@ export async function generateChartConfig(
         if (insightCache.has(cacheKey)) return insightCache.get(cacheKey)?.data;
 
         const prompt = `
-            You are a chart expert. User wants: "${userPrompt}"
-            Generate JSON for a business dashboard:
+            You are a chart expert for a business dashboard. User request: "${userPrompt}"
+            
+            Analyze the request and generate a JSON configuration:
             {
-                "type": "area" | "bar" | "line" | "pie" | "stat",
-                "metric": "total" | "products" | "count" | "aov",
+                "type": "area" | "bar" | "line" | "pie" | "stat" | "radar" | "radial",
+                "metric": "total" | "products" | "labor" | "count" | "aov" | "retention" | "low_stock" | "peak_hours" | "inventory_value" | "category",
                 "title": "Short title in ${language === 'th' ? 'Thai' : 'English'}",
                 "desc": "Short description in ${language === 'th' ? 'Thai' : 'English'}",
-                "color": "#4f46e5"
+                "color": "#4f46e5",
+                "compareType": "none" | "month" | "products",
+                "limit": 10
             }
-            Return ONLY JSON.
+            
+            Guidelines:
+            - For "top N products/สินค้าขายดี N อันดับ": use type="bar" or "pie", metric="products", compareType="products", limit=N (max 10)
+            - For "categories/หมวดหมู่": use metric="category"
+            - For "comparison/เปรียบเทียบ": use compareType="month" or "products"
+            - For "revenue/รายได้": use metric="total"
+            - For "orders/ออเดอร์": use metric="count"
+            - Choose vibrant colors: #3b82f6 (blue), #10b981 (green), #f59e0b (amber), #ef4444 (red), #8b5cf6 (violet), #ec4899 (pink)
+            
+            Return ONLY valid JSON, no explanations.
         `;
 
         const text = await callGeminiWithRetry(prompt, true);
@@ -154,26 +166,91 @@ export async function generateChartConfig(
 export async function chatWithData(
     question: string,
     data: any[],
-    language: 'th' | 'en'
+    language: 'th' | 'en',
+    history: { role: 'user' | 'assistant', content: string }[] = []
 ): Promise<string> {
     try {
-        // ตัดข้อมูลส่งแค่ที่จำเป็นเพื่อประหยัด Token และป้องกัน Error 413
-        const sample = data.slice(0, 10).map(item => ({
+        const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+        // ตัดข้อมูลส่งแค่ที่จำเป็นเพื่อประหยัด Token
+        const sample = data.slice(0, 15).map(item => ({
             amt: item.total_amount,
-            date: item.created_at?.split('T')[0] || 'N/A'
+            date: item.created_at?.split('T')[0] || 'N/A',
+            cust: item.customer_name
         }));
 
-        const prompt = `
-            You are an AI Business Partner. 
-            Question: "${question}"
-            Context: Sales data (Total records: ${data.length}), Sample: ${JSON.stringify(sample)}
-            Answer in ${language === 'th' ? 'Thai' : 'English'} (Concise & Professional).
-        `;
+        const systemPrompt = `You are an AI Business Partner for BitSync. 
+Context: Sales data total ${data.length} records. Recent sample: ${JSON.stringify(sample)}.
+Answer in ${language === 'th' ? 'Thai' : 'English'} (Concise & Professional).`;
 
-        return await callGeminiWithRetry(prompt, false);
+        const chat = model.startChat({
+            history: history.map(h => ({
+                role: h.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: h.content }],
+            })),
+            generationConfig: {
+                maxOutputTokens: 1000,
+            },
+        });
+
+        const prompt = `${systemPrompt}\n\nUser Question: ${question}`;
+        const result = await chat.sendMessage(prompt);
+        const response = await result.response;
+        return response.text();
+
     } catch (error: any) {
+        console.error("AI Chat Error:", error);
         return language === 'th' 
             ? "ขณะนี้มีการใช้งานหนาแน่น กรุณารอสักครู่แล้วถามใหม่ครับ" 
             : "System busy, please ask again in a moment.";
     }
 }
+
+export async function streamChatWithData(
+    question: string,
+    data: any[],
+    language: 'th' | 'en',
+    history: { role: 'user' | 'assistant', content: string }[] = []
+): Promise<string> {
+    try {
+        const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+        
+        const sample = data.slice(0, 15).map(item => ({
+            amt: item.total_amount,
+            date: item.created_at?.split('T')[0] || 'N/A',
+            cust: item.customer_name
+        }));
+
+        const systemPrompt = `You are an AI Business Partner for BitSync. 
+Context: Sales data total ${data.length} records. Recent sample: ${JSON.stringify(sample)}.
+Answer in ${language === 'th' ? 'Thai' : 'English'} (Concise & Professional).`;
+
+        const chat = model.startChat({
+            history: history.map(h => ({
+                role: h.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: h.content }],
+            })),
+        });
+
+        const prompt = `${systemPrompt}\n\nUser Question: ${question}`;
+        const result = await chat.sendMessageStream(prompt);
+
+        let fullText = '';
+        for await (const chunk of result.stream) {
+            fullText += chunk.text();
+        }
+
+        return fullText;
+    } catch (error: any) {
+        console.error("Streaming Error:", error);
+        return language === 'th' 
+            ? "ขณะนี้มีการใช้งานหนาแน่น กรุณารอสักครู่แล้วถามใหม่ครับ" 
+            : "System busy, please ask again in a moment.";
+    }
+}
+
+/**
+ * Streaming version of chat (Optional - requires complex frontend handling)
+ * For simplicity in this environment, we'll focus on making the standard chat 
+ * handle history correctly first, then add streaming UI if needed.
+ */

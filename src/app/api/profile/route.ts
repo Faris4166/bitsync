@@ -99,3 +99,8 @@ export async function POST(req: Request) {
     }, { status: 500 })
   }
 }
+
+// PUT method uses the same logic as POST for updates
+export async function PUT(req: Request) {
+  return POST(req)
+}
