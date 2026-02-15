@@ -19,7 +19,7 @@ export interface AiInsight {
 
 export interface ChartConfigResult {
     type: 'area' | 'bar' | 'line' | 'pie' | 'radar' | 'radial' | 'stat';
-    metric: string;
+    metric: 'total' | 'products' | 'labor' | 'count' | 'aov' | 'retention' | 'low_stock' | 'peak_hours' | 'inventory_value' | 'category';
     title: string;
     desc: string;
     color: string;

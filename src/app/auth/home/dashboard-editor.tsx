@@ -203,6 +203,7 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
             id,
             type,
             title: `New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+            desc: `Custom ${type} chart`,
             color: '#3b82f6',
             metric: 'total',
             x: 0,
@@ -276,6 +277,7 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
                                                 id,
                                                 type: temp.type as any,
                                                 title: temp.title,
+                                                desc: temp.desc,
                                                 color: temp.color,
                                                 metric: temp.metric as any,
                                                 x: 0, y: Infinity,
@@ -430,7 +432,7 @@ function MagicAiHandler({ onGenerate, t, layout }: { onGenerate: (item: Dashboar
         setError('')
         try {
             const { generateChartConfig } = await import('@/app/actions/ai')
-            const config = await generateChartConfig(prompt, layout, 'en') // Defaulting to EN for config generation context, or use language prop
+            const config = await generateChartConfig(prompt, 'en') // Signature: (prompt, language)
 
             if (config) {
                 const id = `item-${Date.now()}`
