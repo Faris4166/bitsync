@@ -1,6 +1,7 @@
 'use server'
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { createStreamableValue } from '@ai-sdk/rsc';
 
 // ใช้ชื่อรุ่นที่คุณต้องการ (ตรวจสอบให้แน่ใจว่า API Key ได้สิทธิ์ Preview แล้ว)
 const MODEL_NAME = "gemini-3-flash-preview"; 
@@ -32,7 +33,7 @@ async function callGeminiWithRetry(
     prompt: string, 
     isJson: boolean = false, 
     retries = 3, 
-    initialDelay = 10000 // เริ่มต้นรอ 10 วินาทีถ้าติด Limit
+    initialDelay = 2000 // Reduced from 10s to 2s
 ): Promise<string> {
     const model = genAI.getGenerativeModel({ model: MODEL_NAME });
     let currentDelay = initialDelay;
@@ -57,11 +58,10 @@ async function callGeminiWithRetry(
         } catch (error: any) {
             const status = error.status || (error.message?.includes("429") ? 429 : 500);
             
-            // ถ้าติด Quota Limit (429) ให้รอแล้วยิงใหม่
             if (status === 429 && i < retries - 1) {
                 console.warn(`[Gemini Quota] Hit limit. Retry ${i + 1} in ${currentDelay}ms...`);
                 await new Promise(res => setTimeout(res, currentDelay));
-                currentDelay *= 2; // เพิ่มเวลารอเป็นเท่าตัว
+                currentDelay *= 2;
                 continue;
             }
             throw error;
@@ -78,10 +78,19 @@ export async function generateTradingInsight(
     try {
         if (!process.env.GEMINI_API_KEY) throw new Error("API Key missing");
 
-        // 1. ตรวจสอบข้อมูลเบื้องต้น
+        // 1. Data Aggregation for better context
         const totalSales = salesData.reduce((acc, curr) => acc + Number(curr.total_amount || 0), 0);
+        const totalLabor = salesData.reduce((acc, curr) => acc + Number(curr.labor_cost || 0), 0);
+        const avgOrder = salesData.length > 0 ? totalSales / salesData.length : 0;
         
-        // 2. ระบบ Cache: ตรวจสอบว่าเคยวิเคราะห์ข้อมูลยอดนี้ไปหรือยัง
+        // Find top customer
+        const customers: Record<string, number> = {};
+        salesData.forEach(r => {
+            if (r.customer_name) customers[r.customer_name] = (customers[r.customer_name] || 0) + Number(r.total_amount);
+        });
+        const topCustomer = Object.entries(customers).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+        // 2. Cache check
         const cacheKey = `insight-${period}-${totalSales}-${salesData.length}-${language}`;
         const cached = insightCache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
@@ -89,15 +98,18 @@ export async function generateTradingInsight(
         }
 
         const prompt = `
-            Analyze this sales data summary:
-            Period: ${period}
-            Total Sales: ${totalSales}
-            Transaction Count: ${salesData.length}
+            Analyze this business performance:
+            - Period: ${period}
+            - Total Revenue: ${totalSales}
+            - Labor Costs: ${totalLabor}
+            - Avg Order Value: ${avgOrder.toFixed(2)}
+            - Transaction Count: ${salesData.length}
+            - Best Customer: ${topCustomer}
             
             Provide a JSON response with:
-            1. "summary": 1-sentence summary in ${language === 'th' ? 'Thai' : 'English'}.
-            2. "trend": "up", "down", or "stable".
-            3. "recommendation": 1 actionable tip in ${language === 'th' ? 'Thai' : 'English'}.
+            1. "summary": 1-sentence analytical summary in ${language === 'th' ? 'Thai' : 'English'}.
+            2. "trend": "up", "down", or "stable" (based on revenue vs typical performance).
+            3. "recommendation": 1 actionable business tip in ${language === 'th' ? 'Thai' : 'English'}.
             
             Response must be valid JSON only.
         `;
@@ -105,7 +117,6 @@ export async function generateTradingInsight(
         const text = await callGeminiWithRetry(prompt, true);
         const result = JSON.parse(text);
 
-        // เก็บลง Cache
         insightCache.set(cacheKey, { data: result, timestamp: Date.now() });
         return result;
 
@@ -211,19 +222,29 @@ export async function streamChatWithData(
     data: any[],
     language: 'th' | 'en',
     history: { role: 'user' | 'assistant', content: string }[] = []
-): Promise<string> {
+) {
+    // 1. Create a streamable value
+    const stream = createStreamableValue('');
+
     try {
         const model = genAI.getGenerativeModel({ model: MODEL_NAME });
         
-        const sample = data.slice(0, 15).map(item => ({
+        // Aggregated stats for the AI to understand the whole dataset
+        const totalSales = data.reduce((acc, curr) => acc + Number(curr.total_amount || 0), 0);
+        
+        // Very minimal samples for speed
+        const recentSamples = data.slice(0, 5).map(item => ({
             amt: item.total_amount,
-            date: item.created_at?.split('T')[0] || 'N/A',
             cust: item.customer_name
         }));
 
-        const systemPrompt = `You are an AI Business Partner for BitSync. 
-Context: Sales data total ${data.length} records. Recent sample: ${JSON.stringify(sample)}.
-Answer in ${language === 'th' ? 'Thai' : 'English'} (Concise & Professional).`;
+        const systemPrompt = `AI Business Partner for BitSync. 
+Stats: Records:${data.length}, Revenue:${totalSales.toLocaleString()}
+Recent: ${JSON.stringify(recentSamples)}
+
+Rules:
+- Answer in ${language === 'th' ? 'Thai' : 'English'} (Be very concise).
+- No pleasantries. Fast & Direct.`;
 
         const chat = model.startChat({
             history: history.map(h => ({
@@ -233,19 +254,31 @@ Answer in ${language === 'th' ? 'Thai' : 'English'} (Concise & Professional).`;
         });
 
         const prompt = `${systemPrompt}\n\nUser Question: ${question}`;
-        const result = await chat.sendMessageStream(prompt);
+        
+        // 2. Start streaming without blocking the main thread
+        (async () => {
+            try {
+                const result = await chat.sendMessageStream(prompt);
+                let fullResponse = '';
+                for await (const chunk of result.stream) {
+                    const text = chunk.text();
+                    fullResponse += text;
+                    stream.update(fullResponse);
+                }
+                stream.done();
+            } catch (err) {
+                console.error("Internal Streaming Error:", err);
+                stream.error(err);
+            }
+        })();
 
-        let fullText = '';
-        for await (const chunk of result.stream) {
-            fullText += chunk.text();
-        }
+        // 3. Return the streamable value (it is serializable)
+        return stream.value;
 
-        return fullText;
     } catch (error: any) {
-        console.error("Streaming Error:", error);
-        return language === 'th' 
-            ? "ขณะนี้มีการใช้งานหนาแน่น กรุณารอสักครู่แล้วถามใหม่ครับ" 
-            : "System busy, please ask again in a moment.";
+        console.error("Streaming Action Setup Error:", error);
+        stream.error(error);
+        return stream.value;
     }
 }
 

@@ -94,3 +94,8 @@ create policy "No public access to receipts" on receipts for all using (false);
 
 -- Note: We will access these tables using the Supabase Service Role Key in our Server Actions,
 -- which bypasses RLS. This keeps the data secure from public API requests.
+
+-- Add indices for performance
+create index if not exists receipts_profile_id_idx on receipts (profile_id);
+create index if not exists receipts_created_at_idx on receipts (created_at desc);
+create index if not exists products_profile_id_idx on products (profile_id);

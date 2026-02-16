@@ -91,6 +91,7 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLe
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { generateTradingInsight, AiInsight } from '@/app/actions/ai'
+import { readStreamableValue } from '@ai-sdk/rsc'
 
 const ResponsiveGridLayout = WidthProvider(Responsive)
 
@@ -1440,15 +1441,19 @@ function AiChatDialog({
                 content: m.content
             }))
 
-            const response = await streamChatWithData(textToSend, data, language as 'th' | 'en', history)
+            const streamValue = await streamChatWithData(textToSend, data, language as 'th' | 'en', history)
 
-            setMessages(prev => {
-                const last = prev[prev.length - 1]
-                if (last && last.role === 'assistant') {
-                    return [...prev.slice(0, -1), { ...last, content: response }]
+            for await (const chunk of readStreamableValue(streamValue)) {
+                if (chunk) {
+                    setMessages(prev => {
+                        const last = prev[prev.length - 1]
+                        if (last && last.role === 'assistant') {
+                            return [...prev.slice(0, -1), { ...last, content: chunk }]
+                        }
+                        return prev
+                    })
                 }
-                return prev
-            })
+            }
         } catch (error: any) {
             console.error("Chat Error:", error)
             const errorMsg = error?.message || (language === 'th' ? 'เกิดข้อผิดพลาด กรุณาลองใหม่' : 'Error occurred. Please try again.')
