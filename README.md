@@ -1,4 +1,8 @@
-# BitsSync - ระบบจัดการร้านค้าอัจฉริยะ (Smart Shop Management System)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Faris4166/Simple-Checklist-Application-in-Python/refs/heads/main/BG.jpg" width="600" />
+</p>
+
+# BitsSync
 
 [Thai](#ภาษาไทย) | [English](#english)
 
