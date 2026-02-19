@@ -1,6 +1,7 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/Faris4166/Simple-Checklist-Application-in-Python/refs/heads/main/BG.jpg" width="600" />
 </p>
+
 # BitsSync
 
 BitsSync เป็นแอปพลิเคชันจัดการร้านค้าที่ทรงพลัง สร้างด้วย Next.js, Supabase, และ AI (Gemini) เพื่อช่วยให้การจัดการสต็อกสินค้า การออกใบเสร็จ และการวิเคราะห์ข้อมูลเป็นเรื่องง่ายและรวดเร็ว
