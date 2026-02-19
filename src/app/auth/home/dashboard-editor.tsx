@@ -279,7 +279,7 @@ export default function DashboardEditor({ layout, onLayoutChange, onClose, hideH
                                     }}
                                     className="rounded-2xl px-6 font-black"
                                 >
-                                    💾 SAVE
+                                    SAVE
                                 </Button>
                                 <Button variant="default" onClick={onClose} className="rounded-2xl px-8 font-black shadow-xl shadow-primary/20 hover:scale-105 transition-all">
                                     DONE
